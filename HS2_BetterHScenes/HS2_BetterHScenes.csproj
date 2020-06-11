@@ -32,14 +32,43 @@
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="0Harmony, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\BepInEx\core\0Harmony.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\Assembly-CSharp.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="BepInEx, Version=5.0.1.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\BepInEx\core\BepInEx.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="BepInEx.Harmony, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\BepInEx\core\BepInEx.Harmony.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="IL, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\IL.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
         <Reference Include="System.Xml" />
+        <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\UnityEngine.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="HS2_BetterHScenes.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Tools.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

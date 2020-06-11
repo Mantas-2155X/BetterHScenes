@@ -32,14 +32,57 @@
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="0Harmony, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\BepInEx\core\0Harmony.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\Assembly-CSharp.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="BehaviorDesigner.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\BehaviorDesigner.Runtime.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="BepInEx, Version=5.0.1.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\BepInEx\core\BepInEx.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="BepInEx.Harmony, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\BepInEx\core\BepInEx.Harmony.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Cinemachine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\Cinemachine.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Sirenix.Serialization, Version=2.0.13.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\Sirenix.Serialization.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
         <Reference Include="System.Xml" />
+        <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\UnityEngine.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+          <HintPath>..\..\..\..\..\..\media\illusion\Ai-Syoujyo\AI-Syoujyo_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="AI_BetterHScenes.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Tools.cs" />
+        <Compile Include="Transpilers.cs" />
+        <Compile Include="UI.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
