@@ -22,7 +22,7 @@ This plugin fixes HScene performance bugs and adds extra features
 * Autofinish with options like inside/outside/together/random  
 
 **Download:**  
-* Download the latest `BetterHScenes.zip` from https://github.com/Mantas-2155X/BetterHScenes/releases  
+* Download the latest `GAME_BetterHScenes.zip` from https://github.com/Mantas-2155X/BetterHScenes/releases  
 
 **Installation:**  
 * Unzip `GAME_BetterHScenes.zip` into your game directory. If done correctly, in `BepInEx/plugins/2155X/` you should see `GAME_BetterHScenes.dll`  
