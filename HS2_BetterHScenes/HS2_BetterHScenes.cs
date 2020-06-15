@@ -68,8 +68,6 @@ namespace HS2_BetterHScenes
         
         private void Awake()
         {
-            //instance = this;
-
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
             
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
@@ -114,8 +112,6 @@ namespace HS2_BetterHScenes
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             
             harmony = new Harmony(nameof(HS2_BetterHScenes));
-            
-            //enabled = false;
         }
 
         //-- Autofinish --//
