@@ -9,13 +9,13 @@ namespace AI_BetterHScenes
     {
         private static readonly string[] increments =
         {
+            "0.01",
             "0.1",
-            "0.25",
             "0.5",
             "1",
             "2",
+            "-0.01",
             "-0.1",
-            "-0.25",
             "-0.5",
             "-1",
             "-2",
@@ -82,30 +82,103 @@ namespace AI_BetterHScenes
                 {
                     case 0:
                     {
-                        Vector3 currPosition = validCharacters[i].transform.localPosition;
-                    
-                        validCharacters[i].transform.localPosition = new Vector3(
-                            axisToggles[0] ? currPosition.x + amount : currPosition.x, 
-                            axisToggles[1] ? currPosition.y + amount : currPosition.y, 
-                            axisToggles[2] ? currPosition.z + amount : currPosition.z
-                            );
+                        Vector3 characterPosition = validCharacters[i].GetPosition();
+
+                        validCharacters[i].SetPosition(new Vector3(
+                            axisToggles[0] ? characterPosition.x + amount : characterPosition.x,
+                            axisToggles[1] ? characterPosition.y + amount : characterPosition.y,
+                            axisToggles[2] ? characterPosition.z + amount : characterPosition.z
+                            ));
+
+                        characterPosition = validCharacters[i].GetPosition();
                         break;
                     }
                     case 3:
                     {
-                        Vector3 currAngle = validCharacters[i].transform.localEulerAngles;
-                    
-                        validCharacters[i].transform.localEulerAngles = new Vector3(
-                            axisToggles[0 + 3] ? currAngle.x + amount : currAngle.x, 
-                            axisToggles[1 + 3] ? currAngle.y + amount : currAngle.y, 
-                            axisToggles[2 + 3] ? currAngle.z + amount : currAngle.z
-                        );
+                        Vector3 characterAngle = validCharacters[i].GetRotation();
+
+                        validCharacters[i].SetRotation(new Vector3(
+                            axisToggles[0 + 3] ? characterAngle.x + amount : characterAngle.x,
+                            axisToggles[1 + 3] ? characterAngle.y + amount : characterAngle.y,
+                            axisToggles[2 + 3] ? characterAngle.z + amount : characterAngle.z
+                            ));
+
+                        characterAngle = validCharacters[i].GetRotation();
                         break;
                     }
                 }
             }
         }
-        
+
+        private static void ResetCharacterPosition()
+        {
+            for (int i = 0; i < characterToggles.Length; i++)
+            {
+                if (!characterToggles[i])
+                    continue;
+
+                switch (dragType)
+                {
+                    case 0:
+                        {
+                            Vector3 characterPosition = validCharacters[i].GetPosition();
+
+                            validCharacters[i].SetPosition(new Vector3(
+                                axisToggles[0] ? 0 : characterPosition.x,
+                                axisToggles[1] ? 0 : characterPosition.y,
+                                axisToggles[2] ? 0 : characterPosition.z
+                                ));
+
+                            characterPosition = validCharacters[i].GetPosition();
+                            break;
+                        }
+                    case 3:
+                        {
+                            Vector3 characterAngle = validCharacters[i].GetRotation();
+
+                            validCharacters[i].SetRotation(new Vector3(
+                                axisToggles[0 + 3] ? 0 : characterAngle.x,
+                                axisToggles[1 + 3] ? 0 : characterAngle.y,
+                                axisToggles[2 + 3] ? 0 : characterAngle.z
+                                ));
+
+                            characterAngle = validCharacters[i].GetRotation();
+                            break;
+                        }
+                }
+            }
+        }
+
+        public static void SavePosition(bool bAsDefault = false)
+        {
+            string characterPairName = null;
+            foreach (var character in validCharacters.Where(character => character != null))
+            {
+                if (characterPairName == null)
+                    characterPairName = character.fileParam.fullname;
+                else
+                    characterPairName += "_" + character.fileParam.fullname;
+            }
+
+            if (characterPairName == null)
+                return;
+
+            CharacterPairList characterPair = new CharacterPairList(characterPairName);
+
+            foreach (var character in validCharacters.Where(character => character != null))
+            {
+                string characterName = character.fileParam.fullname;
+                Vector3 characterPosition = character.GetPosition();
+                Vector3 characterAngle = character.GetRotation();
+
+                CharacterOffsets characterOffsets = new CharacterOffsets(characterName, characterPosition, characterAngle);
+
+                characterPair.AddCharacterOffset(characterOffsets);
+            }
+
+            AI_BetterHScenes.SaveCharacterPairPosition(characterPair, bAsDefault);
+        }
+
         private static void DrawWindow(int id)
         {
             GUILayout.BeginHorizontal();
@@ -164,8 +237,16 @@ namespace AI_BetterHScenes
                             if (GUILayout.Button(dragType == 3 ? ">Rotation<" : " Rotation "))
                                 dragType = 3;
                             
+				            if (GUILayout.Button("Reset"))
+				                ResetCharacterPosition();
 
-                        GUILayout.EndHorizontal();
+				            if (GUILayout.Button("Save"))
+				                SavePosition(false);
+
+				            if (GUILayout.Button("Default"))
+				                SavePosition(true);
+
+						GUILayout.EndHorizontal();
                             
                         GUILayout.BeginHorizontal();
 

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Serialization;
+using System.IO;
 
 using HarmonyLib;
 
@@ -23,13 +25,15 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.3.0";
+        public const string VERSION = "2.3.1";
 
         public new static ManualLogSource Logger;
 
         private static bool inHScene;
 
         private static HScene hScene;
+        private static HScene.AnimationListInfo currentAnimation;
+        private static string currentMotion;
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
         private static HSceneSprite hSprite;
@@ -39,6 +43,8 @@ namespace AI_BetterHScenes
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
         private static List<GameObject> finishObjects;
+
+        public static AnimationOffsets animationOffsets;
 
         private static GameObject map;
         private static Light sun;
@@ -50,9 +56,12 @@ namespace AI_BetterHScenes
         public static bool oldMapState;                        // compatibility with other plugins which might disable the map
         public static LightShadows oldSunShadowsState;         // compatibility with other plugins which might disable the map simulation
 
+        private static bool shouldApplyOffsets; // compatibility with other plugins which might disable the map simulation
+
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
-        
+        private static ConfigEntry<bool> applySavedOffsets { get; set; }
+
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
         
@@ -107,6 +116,7 @@ namespace AI_BetterHScenes
             shouldCleanUp = new List<ChaControl>();
 
             showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
+            applySavedOffsets = Config.Bind("QoL > Draggers", "Apply Saved Dragger Offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"));
             
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
             
@@ -205,6 +215,21 @@ namespace AI_BetterHScenes
                 }
             };
 
+            applySavedOffsets.SettingChanged += delegate
+            {
+                if (!inHScene || hCamera == null)
+                    return;
+
+                if (applySavedOffsets.Value == true)
+                {
+					shouldApplyOffsets = true;
+                }
+            };
+
+            shouldApplyOffsets = false;
+            animationOffsets = new AnimationOffsets();
+            LoadOffsetsFromFile();
+
             HarmonyWrapper.PatchAll(typeof(Transpilers));
             HarmonyWrapper.PatchAll(typeof(AI_BetterHScenes));
         }
@@ -225,6 +250,11 @@ namespace AI_BetterHScenes
             if (showDraggerUI.Value.IsDown())
                 activeUI = !activeUI;
 
+            if (shouldApplyOffsets && !hScene.NowChangeAnim)
+            {
+                HScene_ApplyCharacterOffsets();
+                shouldApplyOffsets = false;
+            }
             if (autoFinish.Value == Tools.AutoFinish.Off || hFlagCtrl == null || finishObjects == null || finishObjects.Count == 0) 
                 return;
             
@@ -483,11 +513,36 @@ namespace AI_BetterHScenes
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
-        
-        //-- Strip clothes when changing animation --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation_StripClothes() => HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
 
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
+        private static void HScene_SetMovePositionPoint()
+        {
+           if (applySavedOffsets.Value == true)
+                shouldApplyOffsets = true;
+        }
+
+        //-- Strip clothes when changing animation --//
+        //-- Save current animation --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation(HScene.AnimationListInfo _info, bool _isForceResetCamera, bool _isForceLoopAction = false, bool _UseFade = true)
+        {
+            currentAnimation = _info;
+            HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
+        }
+
+		//-- Save current motion --//
+		//-- Apply the current offsets --//
+        [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
+        private static void HScene_ChangeMotion(H_Lookat_dan __instance)
+        {
+            if (__instance.strPlayMotion == null)
+                return;
+
+            currentMotion = __instance.strPlayMotion;
+
+            if (applySavedOffsets.Value == true)
+                HScene_ApplyCharacterOffsets();
+		}
         private static void HScene_StripClothes(bool shouldStrip)
         {
             if (!inHScene || !shouldStrip || hScene == null)
@@ -537,7 +592,168 @@ namespace AI_BetterHScenes
                         female.SetClothesState(strip.Key, (byte)strip.Value);
             }
         }
-        
+
+        //-- Apply character offsets for current animation, if they can be found --//
+        private static void HScene_ApplyCharacterOffsets()
+        {
+            if (currentAnimation == null || currentAnimation.nameAnimation == null || currentMotion == null)
+            {
+                AI_BetterHScenes.Logger.LogMessage("null Animation");
+            }
+            else
+            {
+                string characterPairName = null;
+                foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
+                {
+                    if (characterPairName == null)
+                        characterPairName = character.fileParam.fullname;
+                    else
+                        characterPairName += "_" + character.fileParam.fullname;
+                }
+
+//                AI_BetterHScenes.Logger.LogMessage("Loading Offsets for " + currentAnimation.nameAnimation + " Motion " + currentMotion + " for characters " + characterPairName);
+
+                AnimationsList animationList = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation.nameAnimation);
+
+                if (animationList != null && characterPairName != null)
+                {
+                    MotionList motionList = animationList.MotionList.Find(x => x.MotionName == currentMotion);
+                    if (motionList == null)
+                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+
+                    if (motionList != null)
+                    {
+                        CharacterPairList characterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
+
+                        if (characterPair != null)
+                        {
+                            foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
+                            {
+                                CharacterOffsets characterOffsets = characterPair.CharacterOffsets.Find(x => x.CharacterName == character.fileParam.fullname);
+
+                                if (characterOffsets != null)
+                                {
+                                    Vector3 positionOffset = new Vector3(characterOffsets.PositionOffsetX, characterOffsets.PositionOffsetY, characterOffsets.PositionOffsetZ);
+                                    Vector3 rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
+                                    character.SetPosition(positionOffset);
+                                    character.SetRotation(rotationOffset);
+
+ //                                   AI_BetterHScenes.Logger.LogMessage("Offsets Applied");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
+        public static void SaveCharacterPairPosition(CharacterPairList characterPair, bool isDefault = false)
+        {
+
+            if (currentAnimation.nameAnimation == null || characterPair == null || currentMotion == null)
+                return;
+
+            string animationName = currentAnimation.nameAnimation;
+            string motion = currentMotion;
+            if (isDefault)
+                motion = "default";
+
+            AI_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation.nameAnimation + " Motion " + motion + " for characters " + characterPair);
+
+            AnimationsList animation = animationOffsets.Animations.Find(x => x.AnimationName == animationName);
+
+            if (animation != null)
+            {
+                animationOffsets.Animations.Remove(animation);
+
+                MotionList motionList = animation.MotionList.Find(x => x.MotionName == motion);
+                if (motionList != null)
+                {
+                    animation.MotionList.Remove(motionList);
+                    CharacterPairList existingCharacterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPair.CharacterPairName);
+                    if (existingCharacterPair != null)
+                        motionList.CharacterPairList.Remove(existingCharacterPair);
+                    motionList.CharacterPairList.Add(characterPair);
+                    animation.MotionList.Add(motionList);
+                }
+                else
+                {
+                    motionList = new MotionList(motion);
+                    motionList.CharacterPairList.Add(characterPair);
+                    animation.MotionList.Add(motionList);
+                }
+
+                animationOffsets.AddCharacterAnimationsList(animation);
+            }
+            else
+            {
+                animation = new AnimationsList(animationName);
+                MotionList motionList = new MotionList(motion);
+                motionList.CharacterPairList.Add(characterPair);
+                animation.MotionList.Add(motionList);
+                animationOffsets.AddCharacterAnimationsList(animation);
+            }
+
+            SaveOffsetsToFile();
+        }
+
+        public static void SaveOffsetsToFile()
+        {
+            if (animationOffsets == null)
+                return;
+
+            // Create an XML serializer so we can store the offset configuration in an XML file
+            XmlSerializer serializer = new XmlSerializer(typeof(AnimationOffsets));
+
+            // Create a new file stream in which the offset will be stored
+            StreamWriter OffsetFile;
+            try
+            {
+                // Store the setup data
+                OffsetFile = new StreamWriter("AI_BetterHScenes.xml");
+                serializer.Serialize(OffsetFile, animationOffsets);
+                // serializer.Serialize(fileStream, offsets);
+            }
+            catch
+            {
+                AI_BetterHScenes.Logger.LogMessage("save exception!");
+                return;
+            }
+
+            // Close the file
+            OffsetFile.Flush();
+            OffsetFile.Close();
+
+            AI_BetterHScenes.Logger.LogMessage("Offsets Saved");
+
+            return;
+        }
+
+        public static void LoadOffsetsFromFile()
+        {
+            // Create an XML serializer so we can read the offset configuration in an XML file
+            XmlSerializer serializer = new XmlSerializer(typeof(AnimationOffsets));
+
+            Stream OffsetFile;
+            try
+            {
+                // Read in the data
+                OffsetFile = new FileStream("AI_BetterHScenes.xml", FileMode.Open);
+                animationOffsets = (AnimationOffsets)serializer.Deserialize(OffsetFile);
+            }
+            catch
+            {
+                AI_BetterHScenes.Logger.LogMessage("read error!");
+                return;
+            }
+
+            // Close the file
+            OffsetFile.Close();
+
+            return;
+        }
+		
         private static void SetupVariables(HScene __instance)
         {
             map = GameObject.Find("map00_Beach");
@@ -558,6 +774,7 @@ namespace AI_BetterHScenes
             characters.AddRange(__instance.GetMales());
             characters.AddRange(__instance.GetFemales());
 
+            currentAnimation = __instance.StartAnimInfo;
             cameraShouldLock = true;
 
             if (__instance.ctrlFlag != null)
