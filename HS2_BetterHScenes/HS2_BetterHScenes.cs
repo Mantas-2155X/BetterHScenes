@@ -190,8 +190,8 @@ namespace HS2_BetterHScenes
             }
         }
         
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
         //-- Start of HScene --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
         public static void HScene_SetStartAnimationInfo_Patch(HScene __instance, HSceneSprite ___sprite)
         {
             hScene = __instance;
@@ -225,8 +225,8 @@ namespace HS2_BetterHScenes
                 );
         }
         
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         //-- End of HScene --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
             hScene = null;
