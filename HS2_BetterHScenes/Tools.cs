@@ -2,11 +2,15 @@ namespace HS2_BetterHScenes
 {
     public static class Tools
     {
+        public static int mode;
+        public static int modeCtrl;
+
         public enum OffHStartAnimChange
         {
             Off,
             OnHStart,
-            OnHStartAndAnimChange
+            OnAnimChange,
+            Both
         }
         
         public enum OffWeaknessAlways
@@ -45,6 +49,20 @@ namespace HS2_BetterHScenes
             Outside,
             Same,
             Random
+        }
+
+        public static bool IsService()
+        {
+
+
+            return false;
+        }
+
+        public static bool IsInsert()
+        {
+
+
+            return false;
         }
     }
 }
