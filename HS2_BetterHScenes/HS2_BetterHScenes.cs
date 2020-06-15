@@ -7,6 +7,8 @@ using HarmonyLib;
 using BepInEx;
 using BepInEx.Configuration;
 
+using UnityEngine.SceneManagement;
+
 namespace HS2_BetterHScenes
 {
     [BepInPlugin(nameof(HS2_BetterHScenes), nameof(HS2_BetterHScenes), VERSION)]
@@ -14,8 +16,8 @@ namespace HS2_BetterHScenes
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
         public const string VERSION = "2.4.0";
-
-        private static HS2_BetterHScenes instance;
+        
+        private static readonly Random rand = new Random();
         
         private static HScene hScene;
         private static HSceneSprite hSprite;
@@ -23,14 +25,9 @@ namespace HS2_BetterHScenes
         private static CameraControl_Ver2 cameraCtrl;
         
         private static Traverse hSceneTrav;
-        private static Traverse hFlagCtrlTrav;
 
-        private static Harmony coreHarmony;
-        private static Harmony extraHarmony;
+        private static Harmony harmony;
 
-        private static readonly List<Tools.ClothesStrip> malesStrip = new List<Tools.ClothesStrip> {0, 0, 0, 0, 0, 0, 0, 0};
-        private static readonly List<Tools.ClothesStrip> femalesStrip = new List<Tools.ClothesStrip> {0, 0, 0, 0, 0, 0, 0, 0};
-        
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
         
@@ -71,8 +68,8 @@ namespace HS2_BetterHScenes
         
         private void Awake()
         {
-            instance = this;
-            
+            //instance = this;
+
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
             
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
@@ -95,7 +92,7 @@ namespace HS2_BetterHScenes
             stripFemaleSocks = Config.Bind("QoL > Clothes", "Strip female socks", Tools.ClothesStrip.Off, new ConfigDescription("Strip female socks during H"));
             stripFemaleShoes = Config.Bind("QoL > Clothes", "Strip female shoes", Tools.ClothesStrip.Off, new ConfigDescription("Strip female shoes during H"));
          
-            countToWeakness = Config.Bind("QoL > Weakness", "Orgasm count until weakness", 3, new ConfigDescription("How many times does the girl have to orgasm to reach weakness", new AcceptableValueRange<int>(1, 999)));
+            (countToWeakness = Config.Bind("QoL > Weakness", "Orgasm count until weakness", 3, new ConfigDescription("How many times does the girl have to orgasm to reach weakness", new AcceptableValueRange<int>(1, 999)))).SettingChanged += (s, e) => Tools.SetGotoWeaknessCount(countToWeakness.Value);
             forceTears = Config.Bind("QoL > Weakness", "Force show tears", Tools.OffWeaknessAlways.WeaknessOnly, new ConfigDescription("Make girl cry"));
             forceCloseEyes = Config.Bind("QoL > Weakness", "Force close eyes", Tools.OffWeaknessAlways.Off, new ConfigDescription("Close girl eyes"));
             forceStopBlinking = Config.Bind("QoL > Weakness", "Force stop blinking", Tools.OffWeaknessAlways.Off, new ConfigDescription("Stop blinking"));
@@ -105,35 +102,7 @@ namespace HS2_BetterHScenes
             autoServicePrefer = Config.Bind("QoL > Cum", "Preferred auto service finish", Tools.AutoServicePrefer.Drink, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
             autoInsertPrefer = Config.Bind("QoL > Cum", "Preferred auto insert finish", Tools.AutoInsertPrefer.Same, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
 
-            unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
-
-            stripMaleTop.SettingChanged += delegate { malesStrip[0] = stripMaleTop.Value; };
-            stripMaleBottom.SettingChanged += delegate { malesStrip[1] = stripMaleBottom.Value; };
-            stripMaleBra.SettingChanged += delegate { malesStrip[2] = stripMaleBra.Value; };
-            stripMalePanties.SettingChanged += delegate { malesStrip[3] = stripMalePanties.Value; };
-            stripMaleGloves.SettingChanged += delegate { malesStrip[4] = stripMaleGloves.Value; };
-            stripMalePantyhose.SettingChanged += delegate { malesStrip[5] = stripMalePantyhose.Value; };
-            stripMaleSocks.SettingChanged += delegate { malesStrip[6] = stripMaleSocks.Value; };
-            stripMaleShoes.SettingChanged += delegate { malesStrip[7] = stripMaleShoes.Value; };
-
-            stripFemaleTop.SettingChanged += delegate { femalesStrip[0] = stripFemaleTop.Value; };
-            stripFemaleBottom.SettingChanged += delegate { femalesStrip[1] = stripFemaleBottom.Value; };
-            stripFemaleBra.SettingChanged += delegate { femalesStrip[2] = stripFemaleBra.Value; };
-            stripFemalePanties.SettingChanged += delegate { femalesStrip[3] = stripFemalePanties.Value; };
-            stripFemaleGloves.SettingChanged += delegate { femalesStrip[4] = stripFemaleGloves.Value; };
-            stripFemalePantyhose.SettingChanged += delegate { femalesStrip[5] = stripFemalePantyhose.Value; };
-            stripFemaleSocks.SettingChanged += delegate { femalesStrip[6] = stripFemaleSocks.Value; };
-            stripFemaleShoes.SettingChanged += delegate { femalesStrip[7] = stripFemaleShoes.Value; };
-            
-            countToWeakness.SettingChanged += delegate
-            {
-                if (hFlagCtrlTrav == null)
-                    return;
-                
-                hFlagCtrlTrav.Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
-            };
-            
-            unlockCamera.SettingChanged += delegate
+            (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
             {
                 if (cameraCtrl == null)
                     return;
@@ -142,33 +111,26 @@ namespace HS2_BetterHScenes
                 cameraCtrl.isLimitPos = !unlockCamera.Value;
             };
             
-            coreHarmony = new Harmony("HS2_BetterHScenes_Core");
-            extraHarmony = new Harmony("HS2_BetterHScenes_Extra");
-
-            coreHarmony.Patch(
-                typeof(HScene).GetMethod("SetStartAnimationInfo"), 
-                null, 
-                new HarmonyMethod(typeof(HS2_BetterHScenes).GetMethod("HScene_SetStartAnimationInfo_CorePostfix")));
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             
-            coreHarmony.Patch(
-                typeof(HScene).GetMethod("EndProc"), 
-                null, 
-                new HarmonyMethod(typeof(HS2_BetterHScenes).GetMethod("HScene_EndProc_CorePostfix")));
-
-            enabled = false;
+            harmony = new Harmony(nameof(HS2_BetterHScenes));
+            
+            //enabled = false;
         }
 
         //-- Autofinish --//
         private void Update()
         {
-            if (autoFinish.Value == Tools.AutoFinish.Off) 
+            if (hScene == null || autoFinish.Value == Tools.AutoFinish.Off) 
                 return;
             
-            if (hFlagCtrl.feel_m >= 0.98f && Tools.IsService() && autoFinish.Value != (Tools.AutoFinish)2)
+            if (hFlagCtrl.feel_m >= 0.98f && Tools.IsService() && autoFinish.Value != Tools.AutoFinish.InsertOnly)
             {
-                var drink = hSprite.IsFinishVisible(1);
+                // same mode as OnBody only for some reason
+                var drink = hSprite.IsFinishVisible(1) && Tools.modeCtrl != 0; 
                 var vomit = hSprite.IsFinishVisible(3);
-                var onbody = hSprite.IsFinishVisible(4);
+                // same mode as drink for some reason
+                var onbody = hSprite.IsFinishVisible(4) || (hSprite.IsFinishVisible(1) && Tools.modeCtrl == 0);
 
                 switch (autoServicePrefer.Value)
                 {
@@ -193,12 +155,11 @@ namespace HS2_BetterHScenes
                         if (random.Count < 1)
                             break;
 
-                        var rand = new Random();
                         hFlagCtrl.click = random[rand.Next(random.Count)];
                         break;
                 }
             }
-            else if (hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && Tools.IsInsert() && autoFinish.Value != (Tools.AutoFinish)1)
+            else if (hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && Tools.IsInsert() && autoFinish.Value != Tools.AutoFinish.ServiceOnly)
             {
                 var inside = hSprite.IsFinishVisible(1);
                 var outside = hSprite.IsFinishVisible(5);
@@ -226,16 +187,16 @@ namespace HS2_BetterHScenes
 
                         if (random.Count < 1)
                             break;
-
-                        var rand = new Random();
+                        
                         hFlagCtrl.click = random[rand.Next(random.Count)];
                         break;
                 }
             }
         }
         
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
         //-- Start of HScene --//
-        public static void HScene_SetStartAnimationInfo_CorePostfix(HScene __instance, HSceneSprite ___sprite)
+        public static void HScene_SetStartAnimationInfo_Patch(HScene __instance, HSceneSprite ___sprite)
         {
             hScene = __instance;
             hSprite = ___sprite;
@@ -252,19 +213,15 @@ namespace HS2_BetterHScenes
                 return;
 
             hSceneTrav = Traverse.Create(hScene);
-            hFlagCtrlTrav = Traverse.Create(hFlagCtrl);
-            
-            extraHarmony.PatchAll(typeof(HS2_BetterHScenes));
-            
-            instance.enabled = true;
-            
+            Tools.hFlagCtrlTrav = Traverse.Create(hFlagCtrl);
+
             if (unlockCamera.Value)
             {
                 cameraCtrl.isLimitDir = false;
                 cameraCtrl.isLimitPos = false;
             }
 
-            hFlagCtrlTrav.Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
+            Tools.SetGotoWeaknessCount(countToWeakness.Value);
             
             HScene_StripClothes(
                 stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
@@ -272,16 +229,13 @@ namespace HS2_BetterHScenes
                 );
         }
         
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         //-- End of HScene --//
-        public static void HScene_EndProc_CorePostfix()
+        public static void HScene_EndProc_Patch()
         {
             hScene = null;
             hSprite = null;
             hFlagCtrl = null;
-            
-            instance.enabled = false;
-            
-            extraHarmony.UnpatchAll("HS2_BetterHScenes_Extra");
         }
         
         //-- Cache current animation mode --//
@@ -296,7 +250,7 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
         public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
         {
-            if(alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
+            if(alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || (alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
                 __result = true;
         }
         
@@ -307,13 +261,13 @@ namespace HS2_BetterHScenes
             if (_face == null)
                 return;
 
-            if(forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness) 
+            if(forceTears.Value == Tools.OffWeaknessAlways.Always || (forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
                 _face.tear = 1f;
 
-            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
+            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || (forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
                 _face.openEye = 0.05f;
             
-            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
+            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || (forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
                 _face.blink = false;
         }
 
@@ -323,29 +277,61 @@ namespace HS2_BetterHScenes
         
         //-- Strip clothes when changing animation --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimVoiceFlag")]
-        public static void HScene_ChangeAnimVoiceFlag_StripClothes() => HScene_StripClothes(stripMaleClothes.Value > (Tools.OffHStartAnimChange)1, stripFemaleClothes.Value > (Tools.OffHStartAnimChange)1);
+        public static void HScene_ChangeAnimVoiceFlag_StripClothes() => HScene_StripClothes(stripMaleClothes.Value > Tools.OffHStartAnimChange.OnHStart, stripFemaleClothes.Value > Tools.OffHStartAnimChange.OnHStart);
 
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
         {
             if (stripMales)
             {
-                var males = hScene.GetMales();
-                if (males != null && males.Length > 0)
-                    foreach (var male in males.Where(male => male != null))
-                        for (var i = 0; i < malesStrip.Count; i++)
-                            if(malesStrip[i] > 0 && male.IsClothesStateKind(i) && male.fileStatus.clothesState[i] != 2)
-                                male.SetClothesState(i, (byte)malesStrip[i]);
+                var malesStrip = new List<Tools.ClothesStrip>
+                {
+                    stripMaleTop.Value, 
+                    stripMaleBottom.Value, 
+                    stripMaleBra.Value, 
+                    stripMalePanties.Value, 
+                    stripMaleGloves.Value, 
+                    stripMalePantyhose.Value, 
+                    stripMaleSocks.Value,  
+                    stripMaleShoes.Value, 
+                };
+                
+                
+                foreach (var male in hScene.GetMales().Where(male => male != null))
+                    foreach (var item in malesStrip.Select((x, i) => new { x, i }))
+                        if (item.x > 0 && male.IsClothesStateKind(item.i) && male.fileStatus.clothesState[item.i] != 2)
+                            male.SetClothesState(item.i, (byte)item.x);
             }
-            
+
             if (stripFemales)
             {
-                var females = hScene.GetFemales();
-                if (females != null && females.Length > 0)
-                    foreach (var female in females.Where(female => female != null))
-                        for (var i = 0; i < femalesStrip.Count; i++)
-                            if(femalesStrip[i] > 0 && female.IsClothesStateKind(i) && female.fileStatus.clothesState[i] != 2)
-                                female.SetClothesState(i, (byte)femalesStrip[i]);
+                var femalesStrip = new List<Tools.ClothesStrip>
+                {
+                    stripFemaleTop.Value, 
+                    stripFemaleBottom.Value, 
+                    stripFemaleBra.Value, 
+                    stripFemalePanties.Value, 
+                    stripFemaleGloves.Value, 
+                    stripFemalePantyhose.Value, 
+                    stripFemaleSocks.Value,  
+                    stripFemaleShoes.Value, 
+                };
+                
+                foreach (var female in hScene.GetFemales().Where(female => female != null))
+                    foreach (var item in femalesStrip.Select((x, i) => new { x, i }))
+                        if (item.x > 0 && female.IsClothesStateKind(item.i) && female.fileStatus.clothesState[item.i] != 2)
+                            female.SetClothesState(item.i, (byte)item.x);
             }
+        }
+        
+        private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)
+        {
+            if (lsm != LoadSceneMode.Single) 
+                return;
+
+            if (scene.name == "HScene")
+                harmony.PatchAll(typeof(HS2_BetterHScenes));
+            else
+                harmony.UnpatchAll(nameof(HS2_BetterHScenes));
         }
     }
 }
