@@ -366,7 +366,9 @@ namespace AI_BetterHScenes
 
             oldMapState = map.activeSelf;
             oldSunShadowsState = sun.shadows;
-            
+
+            currentAnimation = __instance.StartAnimInfo;
+
             if(disableMap.Value)
                 map.SetActive(false);
 
@@ -392,6 +394,12 @@ namespace AI_BetterHScenes
                 stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both
             );
         }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
+        public static void HScene_SetStartAnimationInfo_Patch()
+        {
+            currentAnimation = hScene.StartAnimInfo;
+        }      
 
         //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
         //-- Set bath desire after h --//
