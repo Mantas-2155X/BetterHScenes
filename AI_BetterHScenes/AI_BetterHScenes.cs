@@ -30,7 +30,6 @@ namespace AI_BetterHScenes
         public new static ManualLogSource Logger;
 
         private static HScene hScene;
-        private static HScene.AnimationListInfo currentAnimation;
         private static string currentMotion;
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
@@ -367,8 +366,6 @@ namespace AI_BetterHScenes
             oldMapState = map.activeSelf;
             oldSunShadowsState = sun.shadows;
 
-            currentAnimation = __instance.StartAnimInfo;
-
             if(disableMap.Value)
                 map.SetActive(false);
 
@@ -393,13 +390,7 @@ namespace AI_BetterHScenes
                 stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
                 stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both
             );
-        }
-
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
-        public static void HScene_SetStartAnimationInfo_Patch()
-        {
-            currentAnimation = hScene.StartAnimInfo;
-        }      
+        }    
 
         //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
         //-- Set bath desire after h --//
@@ -546,13 +537,6 @@ namespace AI_BetterHScenes
                 shouldApplyOffsets = true;
         }
 
-        //-- Save current animation --//
-        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation(HScene.AnimationListInfo _info, bool _isForceResetCamera, bool _isForceLoopAction = false, bool _UseFade = true)
-        {
-            currentAnimation = _info;
-        }
-
         //-- Save current motion --//
         //-- Apply the current offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
@@ -614,7 +598,9 @@ namespace AI_BetterHScenes
         //-- Apply character offsets for current animation, if they can be found --//
         private static void HScene_ApplyCharacterOffsets()
         {
-            if (currentAnimation == null || currentAnimation.nameAnimation == null || currentMotion == null)
+            string currentAnimation = hScene.ctrlFlag.nowAnimationInfo.nameAnimation;
+
+            if (currentAnimation == null || currentMotion == null)
             {
                 AI_BetterHScenes.Logger.LogMessage("null Animation");
             }
@@ -629,7 +615,7 @@ namespace AI_BetterHScenes
                         characterPairName += "_" + character.fileParam.fullname;
                 }
 
-                AnimationsList animationList = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation.nameAnimation);
+                AnimationsList animationList = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
                 if (animationList != null && characterPairName != null)
                 {
                     MotionList motionList;
@@ -671,18 +657,18 @@ namespace AI_BetterHScenes
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
         public static void SaveCharacterPairPosition(CharacterPairList characterPair, bool isDefault = false)
         {
+            string currentAnimation = hScene.ctrlFlag.nowAnimationInfo.nameAnimation;
 
-            if (currentAnimation.nameAnimation == null || characterPair == null || currentMotion == null)
+            if (currentAnimation == null || characterPair == null || currentMotion == null)
                 return;
 
-            string animationName = currentAnimation.nameAnimation;
             string motion = currentMotion;
             if (isDefault)
                 motion = "default";
 
-            AI_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation.nameAnimation + " Motion " + motion + " for characters " + characterPair);
+            AI_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation + " Motion " + motion + " for characters " + characterPair);
 
-            AnimationsList animation = animationOffsets.Animations.Find(x => x.AnimationName == animationName);
+            AnimationsList animation = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
 
             if (animation != null)
             {
@@ -709,7 +695,7 @@ namespace AI_BetterHScenes
             }
             else
             {
-                animation = new AnimationsList(animationName);
+                animation = new AnimationsList(currentAnimation);
                 MotionList motionList = new MotionList(motion);
                 motionList.CharacterPairList.Add(characterPair);
                 animation.MotionList.Add(motionList);
