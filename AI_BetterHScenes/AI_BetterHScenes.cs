@@ -14,7 +14,6 @@ using AIChara;
 using Manager;
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 using Map = Manager.Map;
 
@@ -47,6 +46,7 @@ namespace AI_BetterHScenes
         private static List<SkinnedCollisionHelper> collisionHelpers;
 
         private static bool activeUI;
+        private static bool patched;
         
         private static bool cameraShouldLock;
         private static bool oldMapState;
@@ -188,8 +188,6 @@ namespace AI_BetterHScenes
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
-
-            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
             
             harmony = new Harmony(nameof(AI_BetterHScenes));
             harmony.PatchAll(typeof(Transpilers));
@@ -202,9 +200,17 @@ namespace AI_BetterHScenes
                 UI.DrawDraggersUI();
         }
 
+        //-- Patch & unpatch cause illusion don't do scenemanager anymore --//
         //-- Auto finish, togle chara draggers UI --//
         private void Update()
         {
+            var isHScene = HSceneManager.isHScene;
+            
+            if (isHScene && !patched)
+                HScene_sceneLoaded(true);
+            else if (!isHScene && patched)
+                HScene_sceneLoaded(false);
+
             if (hScene == null)
                 return;
             
@@ -216,11 +222,9 @@ namespace AI_BetterHScenes
             
             if (hFlagCtrl.feel_m >= 0.98f && Tools.IsService() && autoFinish.Value != Tools.AutoFinish.InsertOnly)
             {
-                // same mode as OnBody only for some reason
-                var drink = hSprite.IsFinishVisible(1) && Tools.modeCtrl != 0; 
-                var vomit = hSprite.IsFinishVisible(3);
-                // same mode as drink for some reason
-                var onbody = hSprite.IsFinishVisible(4) || (hSprite.IsFinishVisible(1) && Tools.modeCtrl == 0);
+                var drink = hSprite.IsFinishVisible(4);
+                var vomit = hSprite.IsFinishVisible(5);
+                var onbody = hSprite.IsFinishVisible(0);
 
                 switch (autoServicePrefer.Value)
                 {
@@ -251,9 +255,9 @@ namespace AI_BetterHScenes
             }
             else if (hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && Tools.IsInsert() && autoFinish.Value != Tools.AutoFinish.ServiceOnly)
             {
-                var inside = hSprite.IsFinishVisible(1);
-                var outside = hSprite.IsFinishVisible(5);
-                var same = hSprite.IsFinishVisible(2);
+                var inside = hSprite.IsFinishVisible(2);
+                var outside = hSprite.IsFinishVisible(0);
+                var same = hSprite.IsFinishVisible(1);
 
                 switch (autoInsertPrefer.Value)
                 {
@@ -369,24 +373,28 @@ namespace AI_BetterHScenes
 
             activeUI = false;
 
-            if (!increaseBathDesire.Value || manager.bMerchant)
+            if (!increaseBathDesire.Value || manager.bMerchant) 
                 return;
-
+            
             var agentTable = Singleton<Map>.Instance.AgentTable;
-            if (agentTable == null)
+            if (agentTable == null) 
                 return;
             
             foreach (var female in hScene.GetFemales().Where(female => female != null))
             {
-                var agent = agentTable.FirstOrDefault(pair => pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female).Value;
+                var agent = agentTable.FirstOrDefault(pair =>
+                        pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female)
+                    .Value;
                 if (agent == null)
                     continue;
-                
+
                 var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
                 var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
 
-                var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
-                var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
+                var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0,
+                    100f);
+                var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0,
+                    100f);
                 var clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
                 var newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
 
@@ -534,12 +542,11 @@ namespace AI_BetterHScenes
             }
         }
         
-        private static void SceneManager_sceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode lsm)
+        private static void HScene_sceneLoaded(bool loaded)
         {
-            if (lsm != LoadSceneMode.Single) 
-                return;
-
-            if (scene.name == "HScene")
+            patched = loaded;
+            
+            if (loaded)
                 harmony.PatchAll(typeof(AI_BetterHScenes));
             else
                 harmony.UnpatchAll(nameof(AI_BetterHScenes));
