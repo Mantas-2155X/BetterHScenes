@@ -538,13 +538,11 @@ namespace AI_BetterHScenes
                 shouldApplyOffsets = true;
         }
 
-        //-- Strip clothes when changing animation --//
         //-- Save current animation --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
         private static void HScene_ChangeAnimation(HScene.AnimationListInfo _info, bool _isForceResetCamera, bool _isForceLoopAction = false, bool _UseFade = true)
         {
             currentAnimation = _info;
-            HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
         }
 
         //-- Save current motion --//
