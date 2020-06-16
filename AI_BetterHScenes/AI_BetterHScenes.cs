@@ -157,24 +157,9 @@ namespace AI_BetterHScenes
             increaseBathDesire = Config.Bind("QoL > Cum", "Increase bath desire after H", false, new ConfigDescription("Increase bath desire after H (agents only)"));
 
             keepButtonsInteractive = Config.Bind("QoL > General", "Keep UI buttons interactive*", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm (WARNING: May cause bugs)"));
-            hPointSearchRange = Config.Bind("QoL > General", "H point search range", 300, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 999)));
-            unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
-
-            disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
-            disableSunShadows = Config.Bind("Performance Improvements", "Disable sun shadows", false, new ConfigDescription("Disable sun shadows during H scene"));
-            optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
-
-            countToWeakness.SettingChanged += delegate
+            (hPointSearchRange = Config.Bind("QoL > General", "H point search range", 300, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 999)))).SettingChanged += (s, e) =>
             {
-                if (!inHScene || hFlagCtrl == null)
-                    return;
-
-                Traverse.Create(hFlagCtrl).Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
-            };
-
-            hPointSearchRange.SettingChanged += delegate
-            {
-                if (!inHScene || hSprite == null)
+                if (hSprite == null)
                     return;
 
                 hSprite.HpointSearchRange = hPointSearchRange.Value;
@@ -221,9 +206,6 @@ namespace AI_BetterHScenes
 
             applySavedOffsets.SettingChanged += delegate
             {
-                if (!inHScene || hCamera == null)
-                    return;
-
                 if (applySavedOffsets.Value == true)
                 {
                     shouldApplyOffsets = true;
