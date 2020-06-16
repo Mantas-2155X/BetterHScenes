@@ -25,7 +25,7 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.3.1";
+        public const string VERSION = "2.3.2";
 
         public new static ManualLogSource Logger;
 
@@ -39,7 +39,7 @@ namespace AI_BetterHScenes
         private static HSceneSprite hSprite;
 
         private static VirtualCameraController hCamera;
-        
+
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
         private static List<GameObject> finishObjects;
@@ -51,7 +51,7 @@ namespace AI_BetterHScenes
         private static List<SkinnedCollisionHelper> collisionHelpers;
 
         private static bool activeUI;
-        
+
         public static bool cameraShouldLock;                   // compatibility with other plugins which might disable the camera control
         public static bool oldMapState;                        // compatibility with other plugins which might disable the map
         public static LightShadows oldSunShadowsState;         // compatibility with other plugins which might disable the map simulation
@@ -61,10 +61,11 @@ namespace AI_BetterHScenes
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
+        private static ConfigEntry<bool> useOneOffsetForAllMotions { get; set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
-        
+
         private static ConfigEntry<Tools.OffHStartAnimChange> stripMaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleBottom { get; set; }
@@ -74,7 +75,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.ClothesStrip> stripMalePantyhose { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleSocks { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleShoes { get; set; }
-        
+
         private static ConfigEntry<Tools.OffHStartAnimChange> stripFemaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleBottom { get; set; }
@@ -90,25 +91,25 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.OffWeaknessAlways> forceTears { get; set; }
         private static ConfigEntry<Tools.OffWeaknessAlways> forceCloseEyes { get; set; }
         private static ConfigEntry<Tools.OffWeaknessAlways> forceStopBlinking { get; set; }
-        
+
         //-- Cum --//
         private static ConfigEntry<Tools.AutoFinish> autoFinish { get; set; }
         private static ConfigEntry<Tools.AutoServicePrefer> autoServicePrefer { get; set; }
         private static ConfigEntry<Tools.AutoInsertPrefer> autoInsertPrefer { get; set; }
         public static ConfigEntry<Tools.CleanCum> cleanCumAfterH { get; private set; }
         private static ConfigEntry<bool> increaseBathDesire { get; set; }
-        
+
         //-- General --//
         private static ConfigEntry<Tools.OffWeaknessAlways> alwaysGaugesHeart { get; set; }
         public static ConfigEntry<bool> keepButtonsInteractive { get; private set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
-        
+
         //-- Performance --//
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> disableSunShadows { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
-        
+
         private void Awake()
         {
             Logger = base.Logger;
@@ -116,10 +117,11 @@ namespace AI_BetterHScenes
             shouldCleanUp = new List<ChaControl>();
 
             showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
-            applySavedOffsets = Config.Bind("QoL > Draggers", "Apply Saved Dragger Offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"));
-            
+            applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"));
+            useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
+
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
-            
+
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
             stripMaleTop = Config.Bind("QoL > Clothes", "Strip male top", Tools.ClothesStrip.All, new ConfigDescription("Strip male top during H"));
             stripMaleBottom = Config.Bind("QoL > Clothes", "Strip male bottom", Tools.ClothesStrip.All, new ConfigDescription("Strip male bottom during H"));
@@ -139,7 +141,7 @@ namespace AI_BetterHScenes
             stripFemalePantyhose = Config.Bind("QoL > Clothes", "Strip female pantyhose", Tools.ClothesStrip.Half, new ConfigDescription("Strip female pantyhose during H"));
             stripFemaleSocks = Config.Bind("QoL > Clothes", "Strip female socks", Tools.ClothesStrip.Off, new ConfigDescription("Strip female socks during H"));
             stripFemaleShoes = Config.Bind("QoL > Clothes", "Strip female shoes", Tools.ClothesStrip.Off, new ConfigDescription("Strip female shoes during H"));
-            
+
             countToWeakness = Config.Bind("QoL > Weakness", "Orgasm count until weakness", 3, new ConfigDescription("How many times does the girl have to orgasm to reach weakness", new AcceptableValueRange<int>(1, 999)));
             forceTears = Config.Bind("QoL > Weakness", "Tears when weakness is reached", Tools.OffWeaknessAlways.WeaknessOnly, new ConfigDescription("Make girl cry when weakness is reached during H"));
             forceCloseEyes = Config.Bind("QoL > Weakness", "Close eyes when weakness is reached", Tools.OffWeaknessAlways.Off, new ConfigDescription("Close girl eyes when weakness is reached during H"));
@@ -155,7 +157,7 @@ namespace AI_BetterHScenes
             keepButtonsInteractive = Config.Bind("QoL > General", "Keep UI buttons interactive*", false, new ConfigDescription("Keep buttons interactive during certain events like orgasm (WARNING: May cause bugs)"));
             hPointSearchRange = Config.Bind("QoL > General", "H point search range", 300, new ConfigDescription("Range in which H points are shown when changing location (default 60)", new AcceptableValueRange<int>(1, 999)));
             unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"));
-            
+
             disableMap = Config.Bind("Performance Improvements", "Disable map", false, new ConfigDescription("Disable map during H scene"));
             disableSunShadows = Config.Bind("Performance Improvements", "Disable sun shadows", false, new ConfigDescription("Disable sun shadows during H scene"));
             optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"));
@@ -164,10 +166,10 @@ namespace AI_BetterHScenes
             {
                 if (!inHScene || hFlagCtrl == null)
                     return;
-                
+
                 Traverse.Create(hFlagCtrl).Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
             };
-            
+
             hPointSearchRange.SettingChanged += delegate
             {
                 if (!inHScene || hSprite == null)
@@ -180,7 +182,7 @@ namespace AI_BetterHScenes
             {
                 if (!inHScene || hCamera == null)
                     return;
-                
+
                 hCamera.isLimitDir = !unlockCamera.Value;
                 hCamera.isLimitPos = !unlockCamera.Value;
             };
@@ -189,18 +191,18 @@ namespace AI_BetterHScenes
             {
                 if (!inHScene || map == null)
                     return;
-                
+
                 map.SetActive(!disableMap.Value);
             };
-            
+
             disableSunShadows.SettingChanged += delegate
             {
                 if (!inHScene || sun == null)
                     return;
-                
+
                 sun.shadows = disableSunShadows.Value ? LightShadows.None : LightShadows.Soft;
             };
-            
+
             optimizeCollisionHelpers.SettingChanged += delegate
             {
                 if (!inHScene || collisionHelpers == null)
@@ -210,7 +212,7 @@ namespace AI_BetterHScenes
                 {
                     if (!optimizeCollisionHelpers.Value)
                         helper.forceUpdate = true;
-                    
+
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
@@ -222,7 +224,7 @@ namespace AI_BetterHScenes
 
                 if (applySavedOffsets.Value == true)
                 {
-					shouldApplyOffsets = true;
+                    shouldApplyOffsets = true;
                 }
             };
 
@@ -237,7 +239,7 @@ namespace AI_BetterHScenes
         //-- Draw chara draggers UI --//
         private void OnGUI()
         {
-            if(inHScene && activeUI)
+            if (inHScene && activeUI)
                 UI.DrawDraggersUI();
         }
 
@@ -246,7 +248,7 @@ namespace AI_BetterHScenes
         {
             if (!inHScene)
                 return;
-            
+
             if (showDraggerUI.Value.IsDown())
                 activeUI = !activeUI;
 
@@ -255,95 +257,95 @@ namespace AI_BetterHScenes
                 HScene_ApplyCharacterOffsets();
                 shouldApplyOffsets = false;
             }
-            if (autoFinish.Value == Tools.AutoFinish.Off || hFlagCtrl == null || finishObjects == null || finishObjects.Count == 0) 
+            if (autoFinish.Value == Tools.AutoFinish.Off || hFlagCtrl == null || finishObjects == null || finishObjects.Count == 0)
                 return;
-            
+
             var mode = Traverse.Create(hScene).Field("mode").GetValue<int>();
             switch (mode)
             {
                 case 1 when hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.ServiceOnly || autoFinish.Value == Tools.AutoFinish.Both): // Houshi
-                {
-                    var drink = finishObjects[0].activeSelf;
-                    var vomit = finishObjects[1].activeSelf;
-                    var onbody = finishObjects[2].activeSelf;
-                    
-                    switch (autoServicePrefer.Value)
                     {
-                        case Tools.AutoServicePrefer.Drink when drink:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishDrink;
-                            break;
-                        case Tools.AutoServicePrefer.Spit when vomit:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishVomit;
-                            break;
-                        case Tools.AutoServicePrefer.Outside when onbody:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
-                            break;
-                        case Tools.AutoServicePrefer.Random:
-                            var random = new List<HSceneFlagCtrl.ClickKind>();
-                            if(drink)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishDrink);
-                            if(vomit)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishVomit);
-                            if(onbody)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
+                        var drink = finishObjects[0].activeSelf;
+                        var vomit = finishObjects[1].activeSelf;
+                        var onbody = finishObjects[2].activeSelf;
 
-                            if (random.Count < 1)
+                        switch (autoServicePrefer.Value)
+                        {
+                            case Tools.AutoServicePrefer.Drink when drink:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishDrink;
                                 break;
-                                
-                            var rand = new System.Random();
-                            hFlagCtrl.click = random[rand.Next(random.Count)];
+                            case Tools.AutoServicePrefer.Spit when vomit:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishVomit;
+                                break;
+                            case Tools.AutoServicePrefer.Outside when onbody:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
+                                break;
+                            case Tools.AutoServicePrefer.Random:
+                                var random = new List<HSceneFlagCtrl.ClickKind>();
+                                if (drink)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishDrink);
+                                if (vomit)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishVomit);
+                                if (onbody)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
 
-                            break;
-                        default:
-                            hFlagCtrl.click = drink ? HSceneFlagCtrl.ClickKind.FinishDrink : vomit ? HSceneFlagCtrl.ClickKind.FinishVomit : onbody ? HSceneFlagCtrl.ClickKind.FinishOutSide : HSceneFlagCtrl.ClickKind.None;
-                            break;
+                                if (random.Count < 1)
+                                    break;
+
+                                var rand = new System.Random();
+                                hFlagCtrl.click = random[rand.Next(random.Count)];
+
+                                break;
+                            default:
+                                hFlagCtrl.click = drink ? HSceneFlagCtrl.ClickKind.FinishDrink : vomit ? HSceneFlagCtrl.ClickKind.FinishVomit : onbody ? HSceneFlagCtrl.ClickKind.FinishOutSide : HSceneFlagCtrl.ClickKind.None;
+                                break;
+                        }
+
+                        break;
                     }
-
-                    break;
-                }
                 case 2 when hFlagCtrl.feel_f >= 0.98f && hFlagCtrl.feel_m >= 0.98f && (autoFinish.Value == Tools.AutoFinish.InsertOnly || autoFinish.Value == Tools.AutoFinish.Both): // Sonyu
-                {
-                    var inside = finishObjects[3].activeSelf;
-                    var outside = finishObjects[2].activeSelf;
-                    var same = finishObjects[4].activeSelf;
-                    
-                    switch (autoInsertPrefer.Value)
                     {
-                        case Tools.AutoInsertPrefer.Inside when inside:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishInSide;
-                            break;
-                        case Tools.AutoInsertPrefer.Outside when outside:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
-                            break;
-                        case Tools.AutoInsertPrefer.Same when same:
-                            hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
-                            break;
-                        case Tools.AutoInsertPrefer.Random:
-                            var random = new List<HSceneFlagCtrl.ClickKind>();
-                            if(inside)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishInSide);
-                            if(outside)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
-                            if(same)
-                                random.Add(HSceneFlagCtrl.ClickKind.FinishSame);
+                        var inside = finishObjects[3].activeSelf;
+                        var outside = finishObjects[2].activeSelf;
+                        var same = finishObjects[4].activeSelf;
 
-                            if (random.Count < 1)
+                        switch (autoInsertPrefer.Value)
+                        {
+                            case Tools.AutoInsertPrefer.Inside when inside:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishInSide;
                                 break;
-                                
-                            var rand = new System.Random();
-                            hFlagCtrl.click = random[rand.Next(random.Count)];
+                            case Tools.AutoInsertPrefer.Outside when outside:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishOutSide;
+                                break;
+                            case Tools.AutoInsertPrefer.Same when same:
+                                hFlagCtrl.click = HSceneFlagCtrl.ClickKind.FinishSame;
+                                break;
+                            case Tools.AutoInsertPrefer.Random:
+                                var random = new List<HSceneFlagCtrl.ClickKind>();
+                                if (inside)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishInSide);
+                                if (outside)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishOutSide);
+                                if (same)
+                                    random.Add(HSceneFlagCtrl.ClickKind.FinishSame);
 
-                            break;
-                        default:
-                            hFlagCtrl.click = inside ? HSceneFlagCtrl.ClickKind.FinishInSide : outside ? HSceneFlagCtrl.ClickKind.FinishOutSide : same ? HSceneFlagCtrl.ClickKind.FinishSame : HSceneFlagCtrl.ClickKind.None;
-                            break;
+                                if (random.Count < 1)
+                                    break;
+
+                                var rand = new System.Random();
+                                hFlagCtrl.click = random[rand.Next(random.Count)];
+
+                                break;
+                            default:
+                                hFlagCtrl.click = inside ? HSceneFlagCtrl.ClickKind.FinishInSide : outside ? HSceneFlagCtrl.ClickKind.FinishOutSide : same ? HSceneFlagCtrl.ClickKind.FinishSame : HSceneFlagCtrl.ClickKind.None;
+                                break;
+                        }
+
+                        break;
                     }
-
-                    break;
-                }
             }
         }
-        
+
         //-- Disable map, simulation to improve performance --//
         //-- Remove hcamera movement limit --//
         //-- Change H point search range --//
@@ -352,22 +354,22 @@ namespace AI_BetterHScenes
         public static void HScene_SetStartVoice_Patch(HScene __instance)
         {
             inHScene = true;
-            
+
             SetupVariables(__instance);
-            
+
             if (map != null)
             {
                 oldMapState = map.activeSelf;
-                
-                if(disableMap.Value)
+
+                if (disableMap.Value)
                     map.SetActive(false);
             }
-            
+
             if (sun != null)
             {
                 oldSunShadowsState = sun.shadows;
-                
-                if(disableSunShadows.Value)
+
+                if (disableSunShadows.Value)
                     sun.shadows = LightShadows.None;
             }
 
@@ -379,7 +381,7 @@ namespace AI_BetterHScenes
 
             if (hPointSearchRange.Value != 60 && hSprite != null)
                 hSprite.HpointSearchRange = hPointSearchRange.Value;
-            
+
             HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart);
         }
 
@@ -406,13 +408,13 @@ namespace AI_BetterHScenes
 
             if (females == null || agentTable == null)
                 return;
-            
+
             foreach (var female in females.Where(female => female != null))
             {
                 var agent = agentTable.FirstOrDefault(pair => pair.Value != null && pair.Value.ChaControl == female).Value;
                 if (agent == null)
                     continue;
-                
+
                 var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
                 var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
 
@@ -424,19 +426,19 @@ namespace AI_BetterHScenes
                 agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
             }
         }
-        
+
         //-- Prevent default animation change clothes strip --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetClothStateStartMotion")]
         public static bool HScene_SetClothStateStartMotion_PreventDefaultClothesStrip()
         {
             return !inHScene || !preventDefaultAnimationChangeStrip.Value;
         }
-        
+
         //-- Always gauges heart --//
         [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
         public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)
         {
-            if(inHScene && alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl != null && hFlagCtrl.isFaintness)
+            if (inHScene && alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl != null && hFlagCtrl.isFaintness)
                 __result = true;
         }
 
@@ -446,11 +448,11 @@ namespace AI_BetterHScenes
         {
             if (!inHScene || !cameraShouldLock || !activeUI || __instance == null)
                 return true;
-            
+
             Traverse.Create(__instance).Property("isControlNow").SetValue(false);
             return false;
         }
-   
+
         //-- Tears, close eyes, stop blinking --//
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
         public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(ref HVoiceCtrl.FaceInfo _face)
@@ -458,13 +460,13 @@ namespace AI_BetterHScenes
             if (!inHScene || _face == null)
                 return;
 
-            if(forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness) 
+            if (forceTears.Value == Tools.OffWeaknessAlways.Always || forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
                 _face.tear = 1f;
 
-            if(forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
+            if (forceCloseEyes.Value == Tools.OffWeaknessAlways.Always || forceCloseEyes.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
                 _face.openEye = 0.05f;
-            
-            if(forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
+
+            if (forceStopBlinking.Value == Tools.OffWeaknessAlways.Always || forceStopBlinking.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness)
                 _face.blink = false;
         }
 
@@ -474,13 +476,13 @@ namespace AI_BetterHScenes
         {
             if (!inHScene || __instance == null || collisionHelpers == null)
                 return;
-            
+
             collisionHelpers.Add(__instance);
-            
-            if(optimizeCollisionHelpers.Value)
+
+            if (optimizeCollisionHelpers.Value)
                 __instance.updateOncePerFrame = true;
         }
-        
+
         //-- Add character to the shouldCleanUp list --//
         [HarmonyPostfix, HarmonyPatch(typeof(SiruPasteCtrl), "Proc")]
         public static void SiruPasteCtrl_Proc_PopulateList(ChaControl ___chaFemale)
@@ -495,21 +497,21 @@ namespace AI_BetterHScenes
             var agent = Singleton<Map>.Instance.AgentTable.Values.FirstOrDefault(actor => actor != null && actor.ChaControl == chara);
             if (agent == null)
                 return;
-            
+
             for (var i = 0; i < 5; i++)
             {
-                if (chara.GetSiruFlag((ChaFileDefine.SiruParts)i) == 0) 
+                if (chara.GetSiruFlag((ChaFileDefine.SiruParts)i) == 0)
                     continue;
-                
+
                 shouldCleanUp.Add(chara);
                 break;
             }
         }
-        
+
         //-- Clean up chara after bath if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(Bath), "OnCompletedStateTask")]
         public static void Bath_OnCompletedStateTask_CleanUpCum(Bath __instance) => Tools.CleanUpSiru(__instance);
-        
+
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
@@ -517,7 +519,7 @@ namespace AI_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
         private static void HScene_SetMovePositionPoint()
         {
-           if (applySavedOffsets.Value == true)
+            if (applySavedOffsets.Value == true)
                 shouldApplyOffsets = true;
         }
 
@@ -530,8 +532,8 @@ namespace AI_BetterHScenes
             HScene_StripClothes(stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange || stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStartAndAnimChange);
         }
 
-		//-- Save current motion --//
-		//-- Apply the current offsets --//
+        //-- Save current motion --//
+        //-- Apply the current offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
         private static void HScene_ChangeMotion(H_Lookat_dan __instance)
         {
@@ -542,7 +544,7 @@ namespace AI_BetterHScenes
 
             if (applySavedOffsets.Value == true)
                 HScene_ApplyCharacterOffsets();
-		}
+        }
         private static void HScene_StripClothes(bool shouldStrip)
         {
             if (!inHScene || !shouldStrip || hScene == null)
@@ -553,7 +555,7 @@ namespace AI_BetterHScenes
 
             var males = hScene.GetMales();
             var females = hScene.GetFemales();
-            
+
             if (stripMales && males != null && males.Length > 0)
             {
                 var stripAmounts = new Dictionary<int, Tools.ClothesStrip>
@@ -572,7 +574,7 @@ namespace AI_BetterHScenes
                     foreach (var strip in stripAmounts.Where(strip => strip.Value > 0 && male.IsClothesStateKind(strip.Key) && male.fileStatus.clothesState[strip.Key] != 2))
                         male.SetClothesState(strip.Key, (byte)strip.Value);
             }
-            
+
             if (stripFemales && females != null && females.Length > 0)
             {
                 var stripAmounts = new Dictionary<int, Tools.ClothesStrip>
@@ -611,15 +613,20 @@ namespace AI_BetterHScenes
                         characterPairName += "_" + character.fileParam.fullname;
                 }
 
-//                AI_BetterHScenes.Logger.LogMessage("Loading Offsets for " + currentAnimation.nameAnimation + " Motion " + currentMotion + " for characters " + characterPairName);
-
                 AnimationsList animationList = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation.nameAnimation);
-
                 if (animationList != null && characterPairName != null)
                 {
-                    MotionList motionList = animationList.MotionList.Find(x => x.MotionName == currentMotion);
-                    if (motionList == null)
+                    MotionList motionList;
+                    if(UseOneOffsetForAllMotions())
+                    {
                         motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                    }
+                    else
+                    { 
+                        motionList = animationList.MotionList.Find(x => x.MotionName == currentMotion);
+                        if (motionList == null)
+                            motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                    }
 
                     if (motionList != null)
                     {
@@ -637,8 +644,6 @@ namespace AI_BetterHScenes
                                     Vector3 rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
                                     character.SetPosition(positionOffset);
                                     character.SetRotation(rotationOffset);
-
- //                                   AI_BetterHScenes.Logger.LogMessage("Offsets Applied");
                                 }
                             }
                         }
@@ -711,7 +716,7 @@ namespace AI_BetterHScenes
             try
             {
                 // Store the setup data
-                OffsetFile = new StreamWriter("AI_BetterHScenes.xml");
+                OffsetFile = new StreamWriter("UserData/BetterHScenesOffsets.xml");
                 serializer.Serialize(OffsetFile, animationOffsets);
                 // serializer.Serialize(fileStream, offsets);
             }
@@ -739,7 +744,7 @@ namespace AI_BetterHScenes
             try
             {
                 // Read in the data
-                OffsetFile = new FileStream("AI_BetterHScenes.xml", FileMode.Open);
+                OffsetFile = new FileStream("UserData/BetterHScenesOffsets.xml", FileMode.Open);
                 animationOffsets = (AnimationOffsets)serializer.Deserialize(OffsetFile);
             }
             catch
@@ -753,7 +758,7 @@ namespace AI_BetterHScenes
 
             return;
         }
-		
+
         private static void SetupVariables(HScene __instance)
         {
             map = GameObject.Find("map00_Beach");
@@ -762,14 +767,14 @@ namespace AI_BetterHScenes
 
             sun = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)/EnviroSkyGroup(Clone)/Enviro Directional Light").GetComponent<Light>();
             collisionHelpers = new List<SkinnedCollisionHelper>();
-            
+
             hScene = __instance;
             var hTrav = Traverse.Create(__instance);
-            
+
             hFlagCtrl = __instance.ctrlFlag;
             manager = hTrav.Field("hSceneManager").GetValue<HSceneManager>();
             hSprite = hTrav.Field("sprite").GetValue<HSceneSprite>();
-            
+
             characters = new List<ChaControl>();
             characters.AddRange(__instance.GetMales());
             characters.AddRange(__instance.GetFemales());
@@ -780,7 +785,7 @@ namespace AI_BetterHScenes
             if (__instance.ctrlFlag != null)
             {
                 Traverse.Create(__instance.ctrlFlag).Field("gotoFaintnessCount").SetValue(countToWeakness.Value);
-                
+
                 if (__instance.ctrlFlag.cameraCtrl != null)
                     hCamera = __instance.ctrlFlag.cameraCtrl;
             }
@@ -790,6 +795,11 @@ namespace AI_BetterHScenes
                 finishObjects.Add(hSprite.categoryFinish.transform.Find(name).gameObject);
 
             UI.InitDraggersUI();
+        }
+
+        public static bool UseOneOffsetForAllMotions()
+        {
+            return useOneOffsetForAllMotions.Value;
         }
     }
 }

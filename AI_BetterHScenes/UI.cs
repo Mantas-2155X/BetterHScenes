@@ -241,10 +241,13 @@ namespace AI_BetterHScenes
 				                ResetCharacterPosition();
 
 				            if (GUILayout.Button("Save"))
-				                SavePosition(false);
+				                SavePosition(AI_BetterHScenes.UseOneOffsetForAllMotions());
 
-				            if (GUILayout.Button("Default"))
-				                SavePosition(true);
+                            if (AI_BetterHScenes.UseOneOffsetForAllMotions() == false)
+                            {
+                                if (GUILayout.Button("Default"))
+                                    SavePosition(true);
+                            }
 
 						GUILayout.EndHorizontal();
                             

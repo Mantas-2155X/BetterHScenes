@@ -129,6 +129,36 @@ namespace AI_BetterHScenes
         [XmlElement("RotationOffsetR")]
         public float RotationOffsetR { get; set; }
 
+        public bool ShouldSerializePositionOffsetX()
+        {
+            return PositionOffsetX != 0.0;
+        }
+
+        public bool ShouldSerializePositionOffsetY()
+        {
+            return PositionOffsetY != 0.0;
+        }
+
+        public bool ShouldSerializePositionOffsetZ()
+        {
+            return PositionOffsetZ != 0.0;
+        }
+
+        public bool ShouldSerializeRotationOffsetP()
+        {
+            return RotationOffsetP != 0.0;
+        }
+
+        public bool ShouldSerializeRotationOffsetY()
+        {
+            return RotationOffsetY != 0.0;
+        }
+
+        public bool ShouldSerializeRotationOffsetR()
+        {
+            return RotationOffsetR != 0.0;
+        }
+
         public CharacterOffsets() { }
 
         public CharacterOffsets(string characterName, Vector3 positionOffset, Vector3 rotationOffset)
