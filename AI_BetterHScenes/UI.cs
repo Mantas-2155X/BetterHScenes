@@ -176,7 +176,7 @@ namespace AI_BetterHScenes
                 characterPair.AddCharacterOffset(characterOffsets);
             }
 
-            AI_BetterHScenes.SaveCharacterPairPosition(characterPair, bAsDefault);
+            HSceneOffset.SaveCharacterPairPosition(characterPair, bAsDefault);
         }
 
         private static void DrawWindow(int id)
@@ -241,9 +241,9 @@ namespace AI_BetterHScenes
 				                ResetCharacterPosition();
 
 				            if (GUILayout.Button("Save"))
-				                SavePosition(AI_BetterHScenes.UseOneOffsetForAllMotions());
+				                SavePosition(AI_BetterHScenes.useOneOffsetForAllMotions.Value);
 
-                            if (AI_BetterHScenes.UseOneOffsetForAllMotions() == false)
+                            if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false)
                             {
                                 if (GUILayout.Button("Default"))
                                     SavePosition(true);
