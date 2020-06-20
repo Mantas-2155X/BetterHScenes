@@ -41,6 +41,8 @@ namespace AI_BetterHScenes
                         motionList = animationList.MotionList.Find(x => x.MotionName == AI_BetterHScenes.currentMotion);
                         if (motionList == null)
                             motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                        else if (motionList.MotionName != AI_BetterHScenes.currentMotion)
+                            motionList = animationList.MotionList.Find(x => x.MotionName == "default");
                     }
 
                     if (motionList != null)
