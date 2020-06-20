@@ -1,31 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Xml.Serialization;
 using System.IO;
-
-using HarmonyLib;
-
-using BepInEx;
-using BepInEx.Logging;
-using BepInEx.Configuration;
-
-using AIProject;
-using AIProject.Definitions;
-
-using AIChara;
-using Manager;
-
 using UnityEngine;
 
 namespace AI_BetterHScenes
 {
     class HSceneOffset
     {
-
         //-- Apply character offsets for current animation, if they can be found --//
         public static void ApplyCharacterOffsets()
         {
             string currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
+            bool bValidOffsetsFound = false;
 
             if (currentAnimation == null || AI_BetterHScenes.currentMotion == null)
             {
@@ -73,10 +59,21 @@ namespace AI_BetterHScenes
                                     Vector3 rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
                                     character.SetPosition(positionOffset);
                                     character.SetRotation(rotationOffset);
+                                    bValidOffsetsFound = true;
                                 }
                             }
                         }
                     }
+                }
+            }
+
+            // if we didn't find offsets to apply, move the characters to their 0 position, in case they were moved out of it from another offset.
+            if (!bValidOffsetsFound)
+            {
+                foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
+                {
+                    character.SetPosition(new Vector3(0, 0, 0));
+                    character.SetRotation(new Vector3(0, 0, 0));
                 }
             }
         }

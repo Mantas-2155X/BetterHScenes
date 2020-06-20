@@ -530,6 +530,16 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
 
+
+        //-- Strip clothes when changing animation --//
+        //-- Save current animation --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation(HScene.AnimationListInfo _info, bool _isForceResetCamera, bool _isForceLoopAction = false, bool _UseFade = true)
+        {
+            if (applySavedOffsets.Value == true)
+                shouldApplyOffsets = true;
+        }
+
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
         private static void HScene_SetMovePositionPoint()
         {
@@ -542,13 +552,13 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
         private static void HScene_ChangeMotion(H_Lookat_dan __instance)
         {
-            if (__instance.strPlayMotion == null)
+            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value == true)
                 return;
 
             currentMotion = __instance.strPlayMotion;
 
             if (applySavedOffsets.Value == true)
-                HSceneOffset.ApplyCharacterOffsets();
+                shouldApplyOffsets = true;
         }
         
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
