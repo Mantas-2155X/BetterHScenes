@@ -81,9 +81,8 @@ namespace AI_BetterHScenes
                     character.SetRotation(new Vector3(0, 0, 0));
                 }
             }
-
-            if (AI_BetterHScenes.useSliderUI.Value == true)
-                SliderUI.UpdateUIPositions();
+            
+            SliderUI.UpdateUIPositions();
         }
 
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//

@@ -160,7 +160,7 @@ namespace AI_BetterHScenes
 
             for (int iCharacterIndex = 0; iCharacterIndex < validCharacters.Count; iCharacterIndex++)
             {
-                GUILayout.BeginVertical(validCharacters[iCharacterIndex].fileParam.fullname);
+                GUILayout.BeginVertical();
 
                     GUILayout.Label(validCharacters[iCharacterIndex].fileParam.fullname, centeredStyle);
 
@@ -238,7 +238,7 @@ namespace AI_BetterHScenes
                 GUILayout.EndVertical();
             }
 
-            GUILayout.BeginHorizontal("Copy");
+            GUILayout.BeginHorizontal();
 
                 if (GUILayout.Button("Copy"))
                     CopyPositions();
@@ -252,7 +252,7 @@ namespace AI_BetterHScenes
 
             GUILayout.EndHorizontal();
 
-            GUILayout.BeginHorizontal("Control");
+            GUILayout.BeginHorizontal();
 
                 if (GUILayout.Button("Reload"))
                     HSceneOffset.ApplyCharacterOffsets();
