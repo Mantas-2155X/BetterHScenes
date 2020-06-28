@@ -1,0 +1,2 @@
+E:\Users\Kevin\Source\Repos\BetterHScenes\HS2_BetterHScenes\obj\Release\HS2_BetterHScenes.csprojAssemblyReference.cache
+E:\Users\Kevin\Source\Repos\BetterHScenes\HS2_BetterHScenes\obj\Release\HS2_BetterHScenes.csproj.CoreCompileInputs.cache

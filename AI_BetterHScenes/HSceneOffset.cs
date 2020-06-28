@@ -13,12 +13,15 @@ namespace AI_BetterHScenes
             string currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
             bool bValidOffsetsFound = false;
 
-            if (currentAnimation == null || AI_BetterHScenes.currentMotion == null)
+            if (currentAnimation == null)
             {
                 AI_BetterHScenes.Logger.LogMessage("null Animation");
             }
             else
             {
+                if (AI_BetterHScenes.currentMotion == null)
+                    AI_BetterHScenes.currentMotion = "default";
+
                 string characterPairName = null;
                 foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
                 {
