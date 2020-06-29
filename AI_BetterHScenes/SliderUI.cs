@@ -1,18 +1,20 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Remoting.Messaging;
+﻿using System.Linq;
+using System.Collections.Generic;
+
 using AIChara;
+
 using UnityEngine;
 
 namespace AI_BetterHScenes
 {
     public static class SliderUI
     {
-        private static List<ChaControl> validCharacters;
-        private static int uiWidth = 600;
-        private static int uiHeight = 256;
+        private const int uiWidth = 600;
+        private const int uiHeight = 256;
         private static Rect window = new Rect(0, 0, uiWidth, uiHeight);
 
+        private static List<ChaControl> validCharacters;
+        
         private static Vector3[] charPosition;
         private static Vector3[] charRotation;
         private static Vector3[] charCopyPosition;
@@ -34,7 +36,7 @@ namespace AI_BetterHScenes
             charLastPosition = new Vector3[validCharacters.Count];
             charLastRotation = new Vector3[validCharacters.Count];
 
-            for (int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for (var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
                 charCopyPosition[charIndex] = new Vector3(0, 0, 0);
                 charCopyRotation[charIndex] = new Vector3(0, 0, 0);
@@ -45,7 +47,7 @@ namespace AI_BetterHScenes
 
         public static void UpdateUIPositions()
         {
-            for(int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for(var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
                 charLastPosition[charIndex] = charPosition[charIndex] = validCharacters[charIndex].GetPosition();
                 charLastRotation[charIndex] = charRotation[charIndex] = validCharacters[charIndex].GetRotation();
@@ -60,22 +62,16 @@ namespace AI_BetterHScenes
                     charLastRotation[charIndex].z = charRotation[charIndex].z = charRotation[charIndex].z - 360;
             }
         }
-
-        public static void DrawDraggersUI()
-        {
-            window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));
-        }
-
         private static void MoveCharacter(int charIndex, Vector3 position, Vector3 rotation)
         {
-            if (charIndex < validCharacters.Count && position != null && rotation != null)
-            {
-                validCharacters[charIndex].SetPosition(position);
-                validCharacters[charIndex].SetRotation(rotation);
-            }
+            if (charIndex >= validCharacters.Count) 
+                return;
+            
+            validCharacters[charIndex].SetPosition(position);
+            validCharacters[charIndex].SetRotation(rotation);
         }
 
-        public static void SavePosition(bool bAsDefault = false)
+        private static void SavePosition(bool bAsDefault = false)
         {
             string characterPairName = null;
             foreach (var character in validCharacters.Where(character => character != null))
@@ -89,15 +85,15 @@ namespace AI_BetterHScenes
             if (characterPairName == null)
                 return;
 
-            CharacterPairList characterPair = new CharacterPairList(characterPairName);
+            var characterPair = new CharacterPairList(characterPairName);
 
             foreach (var character in validCharacters.Where(character => character != null))
             {
-                string characterName = character.fileParam.fullname;
-                Vector3 characterPosition = character.GetPosition();
-                Vector3 characterAngle = character.GetRotation();
+                var characterName = character.fileParam.fullname;
+                var characterPosition = character.GetPosition();
+                var characterAngle = character.GetRotation();
 
-                CharacterOffsets characterOffsets = new CharacterOffsets(characterName, characterPosition, characterAngle);
+                var characterOffsets = new CharacterOffsets(characterName, characterPosition, characterAngle);
 
                 characterPair.AddCharacterOffset(characterOffsets);
             }
@@ -105,46 +101,47 @@ namespace AI_BetterHScenes
             HSceneOffset.SaveCharacterPairPosition(characterPair, bAsDefault);
         }
 
-        public static void CopyPositions()
+        private static void CopyPositions()
         {
-            for (int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for (var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
                 charCopyPosition[charIndex] = charPosition[charIndex];
                 charCopyRotation[charIndex] = charRotation[charIndex];
             }
-            AI_BetterHScenes.Logger.LogMessage("Offsets Copied");
         }
 
-        public static void PastePositions()
+        private static void PastePositions()
         {
-            for (int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for (var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
                 charPosition[charIndex] = charCopyPosition[charIndex];
                 charRotation[charIndex] = charCopyRotation[charIndex];
             }
+            
             ApplyPositions();
         }
 
-        public static void ResetPositions()
+        private static void ResetPositions()
         {
-            for (int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for (var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
                 charPosition[charIndex] = new Vector3(0, 0, 0);
                 charRotation[charIndex] = new Vector3(0, 0, 0);
             }
+            
             ApplyPositions();
         }
 
-        public static void ApplyPositions()
+        private static void ApplyPositions()
         {
-            for (int charIndex = 0; charIndex < validCharacters.Count; charIndex++)
+            for (var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
-                if (charPosition[charIndex] != charLastPosition[charIndex] || charRotation[charIndex] != charLastRotation[charIndex])
-                {
-                    MoveCharacter(charIndex, charPosition[charIndex], charRotation[charIndex]);
-                    charLastPosition[charIndex] = charPosition[charIndex];
-                    charLastRotation[charIndex] = charRotation[charIndex];
-                }
+                if (charPosition[charIndex] == charLastPosition[charIndex] && charRotation[charIndex] == charLastRotation[charIndex]) 
+                    continue;
+                
+                MoveCharacter(charIndex, charPosition[charIndex], charRotation[charIndex]);
+                charLastPosition[charIndex] = charPosition[charIndex];
+                charLastRotation[charIndex] = charRotation[charIndex];
             }
         }
 
@@ -158,7 +155,7 @@ namespace AI_BetterHScenes
             lineStyle.margin.top = lineStyle.margin.bottom = 1;
             lineStyle.padding.top = lineStyle.padding.bottom = 1;
 
-            for (int iCharacterIndex = 0; iCharacterIndex < validCharacters.Count; iCharacterIndex++)
+            for (var iCharacterIndex = 0; iCharacterIndex < validCharacters.Count; iCharacterIndex++)
             {
                 GUILayout.BeginVertical();
                 {
@@ -290,16 +287,14 @@ namespace AI_BetterHScenes
                 if (GUILayout.Button("Save This"))
                     SavePosition(AI_BetterHScenes.useOneOffsetForAllMotions.Value);
 
-                if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false)
-                {
-                    if (GUILayout.Button("Save Default"))
-                        SavePosition(true);
-                }
+                if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
+                    SavePosition(true);
             }
             GUILayout.EndHorizontal();
 
             GUI.DragWindow();
-
         }
+        
+        public static void DrawDraggersUI() => window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));
     }
 }

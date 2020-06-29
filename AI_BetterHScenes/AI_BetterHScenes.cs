@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 
 using HarmonyLib;
 
@@ -23,12 +24,11 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.4.0";
+        public const string VERSION = "2.5.0";
 
         public new static ManualLogSource Logger;
 
         private static HScene hScene;
-        public static string currentMotion;
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
         private static HSceneSprite hSprite;
@@ -41,7 +41,8 @@ namespace AI_BetterHScenes
         public static List<ChaControl> shouldCleanUp;
 
         public static AnimationOffsets animationOffsets;
-
+        public static string currentMotion;
+        
         private static readonly System.Random rand = new System.Random();
         
         private static GameObject map;
@@ -55,15 +56,15 @@ namespace AI_BetterHScenes
         private static bool oldMapState;
         private static LightShadows oldSunShadowsState;
 
-        private static bool shouldApplyOffsets; // compatibility with other plugins which might disable the map simulation
+        private static bool shouldApplyOffsets;
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
-        public static ConfigEntry<bool> useOneOffsetForAllMotions { get; set; }
-        public static ConfigEntry<string> offsetFile { get; set; }
-        public static ConfigEntry<float> sliderMaxPosition { get; set; }
-        public static ConfigEntry<float> sliderMaxRotation{ get; set; }
+        public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
+        public static ConfigEntry<string> offsetFile { get; private set; }
+        public static ConfigEntry<float> sliderMaxPosition { get; private set; }
+        public static ConfigEntry<float> sliderMaxRotation{ get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -111,7 +112,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> disableSunShadows { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
-
+        
         private void Awake()
         {
             Logger = base.Logger;
@@ -119,9 +120,16 @@ namespace AI_BetterHScenes
             shouldCleanUp = new List<ChaControl>();
 
             showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
-            applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"));
+            (applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
+            {
+                if (applySavedOffsets.Value)
+                {
+                    shouldApplyOffsets = true;
+                }
+            };
+            
             useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
-            offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk.", null));
+            offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
             sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", (float)2.5, new ConfigDescription("Maximum limits of the position slider bars."));
             sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", (float)45.0, new ConfigDescription("Maximum limits of the rotation slider bars."));
 
@@ -206,15 +214,7 @@ namespace AI_BetterHScenes
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
-
-            applySavedOffsets.SettingChanged += delegate
-            {
-                if (applySavedOffsets.Value == true)
-                {
-                    shouldApplyOffsets = true;
-                }
-            };
-
+  
             shouldApplyOffsets = false;
             animationOffsets = new AnimationOffsets();
             HSceneOffset.LoadOffsetsFromFile();
@@ -231,6 +231,7 @@ namespace AI_BetterHScenes
         }
 
         //-- Patch & unpatch cause illusion don't do scenemanager anymore --//
+        //-- Apply chara offsets --//
         //-- Auto finish, togle chara draggers UI --//
         private void Update()
         {
@@ -412,30 +413,37 @@ namespace AI_BetterHScenes
 
             if (!increaseBathDesire.Value || manager.bMerchant) 
                 return;
-            
-            var agentTable = Singleton<Map>.Instance.AgentTable;
-            if (agentTable == null) 
-                return;
-            
-            foreach (var female in hScene.GetFemales().Where(female => female != null))
+
+            // Prone to errors from previous versions, trying to be safe
+            try
             {
-                var agent = agentTable.FirstOrDefault(pair =>
-                        pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female)
-                    .Value;
-                if (agent == null)
-                    continue;
+                var agentTable = Singleton<Map>.Instance.AgentTable;
+                if (agentTable == null) 
+                    return;
+                
+                foreach (var female in hScene.GetFemales().Where(female => female != null))
+                {
+                    var agent = agentTable.FirstOrDefault(pair => pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female).Value;
+                    if (agent == null)
+                        continue;
 
-                var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
-                var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
+                    var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
+                    var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
 
-                var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0,
-                    100f);
-                var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0,
-                    100f);
-                var clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
-                var newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
+                    var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
+                    var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
+                    var clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
+                    var newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
 
-                agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                    agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.LogMessage("HScene_EndProc_Patch error!");
+                Logger.LogWarning("HScene_EndProc_Patch error!");
+                
+                Console.WriteLine(ex);
             }
         }
 
@@ -536,33 +544,33 @@ namespace AI_BetterHScenes
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
 
 
-        //-- Strip clothes when changing animation --//
-        //-- Save current animation --//
+        //-- Set apply offsets --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_ChangeAnimation(HScene.AnimationListInfo _info, bool _isForceResetCamera, bool _isForceLoopAction = false, bool _UseFade = true)
+        private static void HScene_ChangeAnimation()
         {
-            if (applySavedOffsets.Value == true)
+            if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
         }
 
+        //-- Set apply offsets --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
         private static void HScene_SetMovePositionPoint()
         {
-            if (applySavedOffsets.Value == true)
+            if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
         }
 
         //-- Save current motion --//
-        //-- Apply the current offsets --//
+        //-- Set apply offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
         private static void HScene_ChangeMotion(H_Lookat_dan __instance)
         {
-            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value == true)
+            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value)
                 return;
 
             currentMotion = __instance.strPlayMotion;
 
-            if (applySavedOffsets.Value == true)
+            if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
         }
         
@@ -609,9 +617,7 @@ namespace AI_BetterHScenes
                             female.SetClothesState(item.i, (byte)item.x);
             }
         }
-
-
-
+        
         private static void HScene_sceneLoaded(bool loaded)
         {
             patched = loaded;

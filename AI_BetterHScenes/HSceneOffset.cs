@@ -1,17 +1,18 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Xml.Serialization;
-using System.IO;
+
 using UnityEngine;
 
 namespace AI_BetterHScenes
 {
-    class HSceneOffset
+    public static class HSceneOffset
     {
         //-- Apply character offsets for current animation, if they can be found --//
         public static void ApplyCharacterOffsets()
         {
-            string currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
-            bool bValidOffsetsFound = false;
+            var currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
+            var bValidOffsetsFound = false;
 
             if (currentAnimation == null)
             {
@@ -31,11 +32,11 @@ namespace AI_BetterHScenes
                         characterPairName += "_" + character.fileParam.fullname;
                 }
 
-                AnimationsList animationList = AI_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
+                var animationList = AI_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
                 if (animationList != null && characterPairName != null)
                 {
                     MotionList motionList;
-                    if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == true)
+                    if (AI_BetterHScenes.useOneOffsetForAllMotions.Value)
                     {
                         motionList = animationList.MotionList.Find(x => x.MotionName == "default");
                     }
@@ -48,26 +49,26 @@ namespace AI_BetterHScenes
                             motionList = animationList.MotionList.Find(x => x.MotionName == "default");
                     }
 
-                    if (motionList != null)
+                    var characterPair = motionList?.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
+
+                    if (characterPair != null)
                     {
-                        CharacterPairList characterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
-
-                        if (characterPair != null)
+                        foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
                         {
-                            foreach (var character in AI_BetterHScenes.characters.Where(character => character != null))
-                            {
-                                CharacterOffsets characterOffsets = characterPair.CharacterOffsets.Find(x => x.CharacterName == character.fileParam.fullname);
+                            var characterOffsets = characterPair.CharacterOffsets.Find(x => x.CharacterName == character.fileParam.fullname);
 
-                                if (characterOffsets != null)
-                                {
-                                    Vector3 positionOffset = new Vector3(characterOffsets.PositionOffsetX, characterOffsets.PositionOffsetY, characterOffsets.PositionOffsetZ);
-                                    Vector3 rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
-                                    character.SetPosition(positionOffset);
-                                    character.SetRotation(rotationOffset);
-                                    bValidOffsetsFound = true;
-                                }
-                            }
+                            if (characterOffsets == null) 
+                                continue;
+                            
+                            var positionOffset = new Vector3(characterOffsets.PositionOffsetX, characterOffsets.PositionOffsetY, characterOffsets.PositionOffsetZ);
+                            var rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
+                            
+                            character.SetPosition(positionOffset);
+                            character.SetRotation(rotationOffset);
+                            bValidOffsetsFound = true;
                         }
+                        
+                        AI_BetterHScenes.Logger.LogMessage("Offsets Applied");
                     }
                 }
             }
@@ -88,30 +89,31 @@ namespace AI_BetterHScenes
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
         public static void SaveCharacterPairPosition(CharacterPairList characterPair, bool isDefault = false)
         {
-            string currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
-
+            var currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
             if (currentAnimation == null || characterPair == null || AI_BetterHScenes.currentMotion == null)
                 return;
 
-            string motion = AI_BetterHScenes.currentMotion;
+            var motion = AI_BetterHScenes.currentMotion;
             if (isDefault)
                 motion = "default";
 
             AI_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation + " Motion " + motion + " for characters " + characterPair);
 
-            AnimationsList animation = AI_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
+            var animation = AI_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
 
             if (animation != null)
             {
                 AI_BetterHScenes.animationOffsets.Animations.Remove(animation);
 
-                MotionList motionList = animation.MotionList.Find(x => x.MotionName == motion);
+                var motionList = animation.MotionList.Find(x => x.MotionName == motion);
                 if (motionList != null)
                 {
                     animation.MotionList.Remove(motionList);
-                    CharacterPairList existingCharacterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPair.CharacterPairName);
+                    
+                    var existingCharacterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPair.CharacterPairName);
                     if (existingCharacterPair != null)
                         motionList.CharacterPairList.Remove(existingCharacterPair);
+                    
                     motionList.CharacterPairList.Add(characterPair);
                     animation.MotionList.Add(motionList);
                 }
@@ -127,7 +129,7 @@ namespace AI_BetterHScenes
             else
             {
                 animation = new AnimationsList(currentAnimation);
-                MotionList motionList = new MotionList(motion);
+                var motionList = new MotionList(motion);
                 motionList.CharacterPairList.Add(characterPair);
                 animation.MotionList.Add(motionList);
                 AI_BetterHScenes.animationOffsets.AddCharacterAnimationsList(animation);
@@ -136,13 +138,13 @@ namespace AI_BetterHScenes
             SaveOffsetsToFile();
         }
 
-        public static void SaveOffsetsToFile()
+        private static void SaveOffsetsToFile()
         {
             if (AI_BetterHScenes.animationOffsets == null)
                 return;
 
             // Create an XML serializer so we can store the offset configuration in an XML file
-            XmlSerializer serializer = new XmlSerializer(typeof(AnimationOffsets));
+            var serializer = new XmlSerializer(typeof(AnimationOffsets));
 
             // Create a new file stream in which the offset will be stored
             StreamWriter OffsetFile;
@@ -164,14 +166,12 @@ namespace AI_BetterHScenes
             OffsetFile.Close();
 
             AI_BetterHScenes.Logger.LogMessage("Offsets Saved");
-
-            return;
         }
 
         public static void LoadOffsetsFromFile()
         {
             // Create an XML serializer so we can read the offset configuration in an XML file
-            XmlSerializer serializer = new XmlSerializer(typeof(AnimationOffsets));
+            var serializer = new XmlSerializer(typeof(AnimationOffsets));
 
             Stream OffsetFile;
             try
@@ -188,9 +188,6 @@ namespace AI_BetterHScenes
 
             // Close the file
             OffsetFile.Close();
-
-            return;
         }
-
     }
 }

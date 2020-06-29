@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Xml.Serialization;
+﻿using System.Xml.Serialization;
+using System.Collections.Generic;
+
 using UnityEngine;
 
 namespace AI_BetterHScenes
@@ -11,9 +12,7 @@ namespace AI_BetterHScenes
         [XmlArray("Animations")]
         [XmlArrayItem("Animation")]
         public List<AnimationsList> Animations = new List<AnimationsList>();
-
-        public AnimationOffsets() { }
-
+        
         public void AddCharacterAnimationsList(AnimationsList characterAnimationList)
         {
             Animations.Add(characterAnimationList);
@@ -90,7 +89,7 @@ namespace AI_BetterHScenes
 
         public CharacterPairList(string name)
         {
-            this.CharacterPairName = name;
+            CharacterPairName = name;
         }
 
         public void AddCharacterOffset(CharacterOffsets characterOffsets)
@@ -123,48 +122,24 @@ namespace AI_BetterHScenes
         [XmlElement("RotationOffsetR")]
         public float RotationOffsetR { get; set; }
 
-        public bool ShouldSerializePositionOffsetX()
-        {
-            return PositionOffsetX != 0.0;
-        }
-
-        public bool ShouldSerializePositionOffsetY()
-        {
-            return PositionOffsetY != 0.0;
-        }
-
-        public bool ShouldSerializePositionOffsetZ()
-        {
-            return PositionOffsetZ != 0.0;
-        }
-
-        public bool ShouldSerializeRotationOffsetP()
-        {
-            return RotationOffsetP != 0.0;
-        }
-
-        public bool ShouldSerializeRotationOffsetY()
-        {
-            return RotationOffsetY != 0.0;
-        }
-
-        public bool ShouldSerializeRotationOffsetR()
-        {
-            return RotationOffsetR != 0.0;
-        }
+        public bool ShouldSerializePositionOffsetX() => PositionOffsetX != 0.0;
+        public bool ShouldSerializePositionOffsetY() => PositionOffsetY != 0.0;
+        public bool ShouldSerializePositionOffsetZ() => PositionOffsetZ != 0.0;
+        public bool ShouldSerializeRotationOffsetP() => RotationOffsetP != 0.0;
+        public bool ShouldSerializeRotationOffsetY() => RotationOffsetY != 0.0;
+        public bool ShouldSerializeRotationOffsetR() => RotationOffsetR != 0.0;
 
         public CharacterOffsets() { }
 
-        public CharacterOffsets(string characterName, Vector3 positionOffset, Vector3 rotationOffset)
+        public CharacterOffsets(string _characterName, Vector3 _positionOffset, Vector3 _rotationOffset)
         {
-            this.CharacterName = characterName;
-            this.PositionOffsetX = positionOffset.x;
-            this.PositionOffsetY = positionOffset.y;
-            this.PositionOffsetZ = positionOffset.z;
-            this.RotationOffsetP = rotationOffset.x;
-            this.RotationOffsetY = rotationOffset.y;
-            this.RotationOffsetR = rotationOffset.z;
+            CharacterName = _characterName;
+            PositionOffsetX = _positionOffset.x;
+            PositionOffsetY = _positionOffset.y;
+            PositionOffsetZ = _positionOffset.z;
+            RotationOffsetP = _rotationOffset.x;
+            RotationOffsetY = _rotationOffset.y;
+            RotationOffsetR = _rotationOffset.z;
         }
     }
-
 }
