@@ -9,8 +9,8 @@ namespace AI_BetterHScenes
     public static class SliderUI
     {
         private static List<ChaControl> validCharacters;
-        private static int uiWidth = 224;// Screen.width / 6;
-        private static int uiHeight = 576;// Screen.height * 4 / 5;
+        private static int uiWidth = 600;
+        private static int uiHeight = 256;
         private static Rect window = new Rect(0, 0, uiWidth, uiHeight);
 
         private static Vector3[] charPosition;
@@ -161,85 +161,118 @@ namespace AI_BetterHScenes
             for (int iCharacterIndex = 0; iCharacterIndex < validCharacters.Count; iCharacterIndex++)
             {
                 GUILayout.BeginVertical();
-
+                {
                     GUILayout.Label(validCharacters[iCharacterIndex].fileParam.fullname, centeredStyle);
 
                     GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
 
                     GUILayout.BeginHorizontal();
+                    {
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Position X");
 
-                    GUILayout.Label("Position X");
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charPosition[iCharacterIndex].x = 0;
+                            }
+                            GUILayout.EndHorizontal();
 
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth/4)))
-                            charPosition[iCharacterIndex].x = 0;
+                            charPosition[iCharacterIndex].x = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                        }
+                        GUILayout.EndVertical();
 
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Position Y");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charPosition[iCharacterIndex].y = 0;
+                            }
+                            GUILayout.EndHorizontal();
+
+                            charPosition[iCharacterIndex].y = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                        }
+                        GUILayout.EndVertical();
+
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Position Z");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charPosition[iCharacterIndex].z = 0;
+                            }
+                            GUILayout.EndHorizontal();
+
+                            charPosition[iCharacterIndex].z = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                        }
+                        GUILayout.EndVertical();
+                    }
                     GUILayout.EndHorizontal();
-
-                    charPosition[iCharacterIndex].x = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
 
                     GUILayout.BeginHorizontal();
+                    {
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Rotation P");
 
-                        GUILayout.Label("Position Y");
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charRotation[iCharacterIndex].x = 0;
+                            }
+                            GUILayout.EndHorizontal();
 
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 4)))
-                            charPosition[iCharacterIndex].y = 0;
+                            charRotation[iCharacterIndex].x = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                        }
+                        GUILayout.EndVertical();
 
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Rotation Y");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charRotation[iCharacterIndex].y = 0;
+                            }
+                            GUILayout.EndHorizontal();
+
+                            charRotation[iCharacterIndex].y = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                        }
+                        GUILayout.EndVertical();
+
+                        GUILayout.BeginVertical();
+                        {
+                            GUILayout.BeginHorizontal();
+                            {
+                                GUILayout.Label("Rotation Z");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    charRotation[iCharacterIndex].z = 0;
+                            }
+                            GUILayout.EndHorizontal();
+
+                            charRotation[iCharacterIndex].z = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                        }
+                        GUILayout.EndVertical();
+                    }
                     GUILayout.EndHorizontal();
-
-                    charPosition[iCharacterIndex].y = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
-
-                    GUILayout.BeginHorizontal();
-
-                        GUILayout.Label("Position Z");
-
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 4)))
-                            charPosition[iCharacterIndex].z = 0;
-
-                    GUILayout.EndHorizontal();
-
-                    charPosition[iCharacterIndex].z = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
-
-                    GUILayout.BeginHorizontal();
-
-                        GUILayout.Label("Rotation P");
-
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 4)))
-                            charRotation[iCharacterIndex].x = 0;
-                    GUILayout.EndHorizontal();
-
-                    charRotation[iCharacterIndex].x = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
-
-                    GUILayout.BeginHorizontal();
-
-                        GUILayout.Label("Rotation Y");
-
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 4)))
-                            charRotation[iCharacterIndex].y = 0;
-
-                    GUILayout.EndHorizontal();
-
-                    charRotation[iCharacterIndex].y = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
-
-                    GUILayout.BeginHorizontal();
-
-                        GUILayout.Label("Rotation Z");
-
-                        if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 4)))
-                            charRotation[iCharacterIndex].z = 0;
-
-                    GUILayout.EndHorizontal();
-
-                    charRotation[iCharacterIndex].z = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
 
                     ApplyPositions();
 
                     GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
-
+                }
                 GUILayout.EndVertical();
             }
 
             GUILayout.BeginHorizontal();
-
+            {
                 if (GUILayout.Button("Copy"))
                     CopyPositions();
 
@@ -250,10 +283,6 @@ namespace AI_BetterHScenes
                 if (GUILayout.Button("Reset All"))
                     ResetPositions();
 
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-
                 if (GUILayout.Button("Reload"))
                     HSceneOffset.ApplyCharacterOffsets();
 
@@ -263,10 +292,10 @@ namespace AI_BetterHScenes
 
                 if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false)
                 {
-                    if (GUILayout.Button("Save For All"))
+                    if (GUILayout.Button("Save Default"))
                         SavePosition(true);
                 }
-
+            }
             GUILayout.EndHorizontal();
 
             GUI.DragWindow();
