@@ -5,7 +5,7 @@ using AIChara;
 
 using UnityEngine;
 
-namespace AI_BetterHScenes
+namespace HS2_BetterHScenes
 {
     public static class SliderUI
     {
@@ -26,7 +26,7 @@ namespace AI_BetterHScenes
         {
             validCharacters = new List<ChaControl>();
 
-            foreach (var chara in AI_BetterHScenes.characters.Where(chara => chara != null))
+            foreach (var chara in HS2_BetterHScenes.characters.Where(chara => chara != null))
                 validCharacters.Add(chara);
 
             charPosition = new Vector3[validCharacters.Count];
@@ -148,7 +148,7 @@ namespace AI_BetterHScenes
         private static void DrawWindow(int id)
         {
             var centeredStyle = new GUIStyle(GUI.skin.GetStyle("Label")) {alignment = TextAnchor.UpperCenter};
-
+            
             var lineStyle = new GUIStyle("box");
             lineStyle.border.top = lineStyle.border.bottom = 1;
             lineStyle.margin.top = lineStyle.margin.bottom = 1;
@@ -175,7 +175,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charPosition[iCharacterIndex].x = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                            charPosition[iCharacterIndex].x = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].x, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
                         }
                         GUILayout.EndVertical();
 
@@ -190,7 +190,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charPosition[iCharacterIndex].y = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                            charPosition[iCharacterIndex].y = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].y, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
                         }
                         GUILayout.EndVertical();
 
@@ -205,7 +205,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charPosition[iCharacterIndex].z = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxPosition.Value, AI_BetterHScenes.sliderMaxPosition.Value);
+                            charPosition[iCharacterIndex].z = GUILayout.HorizontalSlider(charPosition[iCharacterIndex].z, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
                         }
                         GUILayout.EndVertical();
                     }
@@ -224,7 +224,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charRotation[iCharacterIndex].x = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].x, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                            charRotation[iCharacterIndex].x = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].x, -HS2_BetterHScenes.sliderMaxRotation.Value, HS2_BetterHScenes.sliderMaxRotation.Value);
                         }
                         GUILayout.EndVertical();
 
@@ -239,7 +239,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charRotation[iCharacterIndex].y = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].y, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                            charRotation[iCharacterIndex].y = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].y, -HS2_BetterHScenes.sliderMaxRotation.Value, HS2_BetterHScenes.sliderMaxRotation.Value);
                         }
                         GUILayout.EndVertical();
 
@@ -254,7 +254,7 @@ namespace AI_BetterHScenes
                             }
                             GUILayout.EndHorizontal();
 
-                            charRotation[iCharacterIndex].z = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].z, -AI_BetterHScenes.sliderMaxRotation.Value, AI_BetterHScenes.sliderMaxRotation.Value);
+                            charRotation[iCharacterIndex].z = GUILayout.HorizontalSlider(charRotation[iCharacterIndex].z, -HS2_BetterHScenes.sliderMaxRotation.Value, HS2_BetterHScenes.sliderMaxRotation.Value);
                         }
                         GUILayout.EndVertical();
                     }
@@ -284,9 +284,9 @@ namespace AI_BetterHScenes
 
 
                 if (GUILayout.Button("Save This"))
-                    SavePosition(AI_BetterHScenes.useOneOffsetForAllMotions.Value);
+                    SavePosition(HS2_BetterHScenes.useOneOffsetForAllMotions.Value);
 
-                if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
+                if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
                     SavePosition(true);
             }
             GUILayout.EndHorizontal();

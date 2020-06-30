@@ -542,8 +542,7 @@ namespace AI_BetterHScenes
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
-
-
+        
         //-- Set apply offsets --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
         private static void HScene_ChangeAnimation()

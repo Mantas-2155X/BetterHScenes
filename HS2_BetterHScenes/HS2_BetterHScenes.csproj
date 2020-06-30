@@ -64,10 +64,21 @@
           <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.TextRenderingModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="HS2_BetterHScenes.cs" />
+        <Compile Include="HSceneOffset.cs" />
+        <Compile Include="OffsetFileXML.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="SliderUI.cs" />
         <Compile Include="Tools.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

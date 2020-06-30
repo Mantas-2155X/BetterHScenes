@@ -1,13 +1,18 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Collections.Generic;
 
 using HarmonyLib;
 
 using BepInEx;
+using BepInEx.Logging;
 using BepInEx.Configuration;
 
+using UnityEngine;
 using UnityEngine.SceneManagement;
+
+using AIChara;
+
+using Random = System.Random;
 
 namespace HS2_BetterHScenes
 {
@@ -15,19 +20,37 @@ namespace HS2_BetterHScenes
     [BepInProcess("HoneySelect2")]
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.4.0";
+        public const string VERSION = "2.5.0";
         
+        public new static ManualLogSource Logger;
+
         private static readonly Random rand = new Random();
         
         private static HScene hScene;
         private static HSceneSprite hSprite;
-        private static HSceneFlagCtrl hFlagCtrl;
+        public static HSceneFlagCtrl hFlagCtrl;
         private static CameraControl_Ver2 cameraCtrl;
         
+        public static AnimationOffsets animationOffsets;
         private static Traverse hSceneTrav;
-
         private static Harmony harmony;
+        
+        public static List<ChaControl> characters;
+        
+        private static bool activeUI;
+        private static bool shouldApplyOffsets;
+        private static bool cameraShouldLock;
 
+        public static string currentMotion;
+
+        //-- Draggers --//
+        private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
+        private static ConfigEntry<bool> applySavedOffsets { get; set; }
+        public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
+        public static ConfigEntry<string> offsetFile { get; private set; }
+        public static ConfigEntry<float> sliderMaxPosition { get; private set; }
+        public static ConfigEntry<float> sliderMaxRotation{ get; private set; }
+        
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
         
@@ -68,6 +91,22 @@ namespace HS2_BetterHScenes
         
         private void Awake()
         {
+            Logger = base.Logger;
+            
+            showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
+            (applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
+            {
+                if (applySavedOffsets.Value)
+                {
+                    shouldApplyOffsets = true;
+                }
+            };
+            
+            useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
+            offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
+            sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", (float)2.5, new ConfigDescription("Maximum limits of the position slider bars."));
+            sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", (float)45.0, new ConfigDescription("Maximum limits of the rotation slider bars."));
+
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
             
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
@@ -109,15 +148,39 @@ namespace HS2_BetterHScenes
                 cameraCtrl.isLimitPos = !unlockCamera.Value;
             };
             
-            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+            shouldApplyOffsets = false;
+            animationOffsets = new AnimationOffsets();
+            HSceneOffset.LoadOffsetsFromFile();
             
             harmony = new Harmony(nameof(HS2_BetterHScenes));
+            
+            SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-        //-- Autofinish --//
+        //-- Draw chara draggers UI --//
+        private void OnGUI()
+        {
+            if (activeUI)
+                SliderUI.DrawDraggersUI();
+        }
+        
+        //-- Apply chara offsets --//
+        //-- Auto finish, togle chara draggers UI --//
         private void Update()
         {
-            if (hScene == null || autoFinish.Value == Tools.AutoFinish.Off) 
+            if (hScene == null)
+                return;
+            
+            if (showDraggerUI.Value.IsDown())
+                activeUI = !activeUI;
+
+            if (shouldApplyOffsets && !hScene.NowChangeAnim)
+            {
+                HSceneOffset.ApplyCharacterOffsets();
+                shouldApplyOffsets = false;
+            }
+            
+            if (autoFinish.Value == Tools.AutoFinish.Off) 
                 return;
             
             if (hFlagCtrl.feel_m >= 0.98f && Tools.IsService() && autoFinish.Value != Tools.AutoFinish.InsertOnly)
@@ -217,6 +280,14 @@ namespace HS2_BetterHScenes
                 cameraCtrl.isLimitPos = false;
             }
 
+            cameraShouldLock = true;
+            
+            characters = new List<ChaControl>();
+            characters.AddRange(__instance.GetMales());
+            characters.AddRange(__instance.GetFemales());
+            
+            SliderUI.InitDraggersUI();
+            
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
             
             HScene_StripClothes(
@@ -229,6 +300,14 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
+            activeUI = false;
+
+            if (characters != null)
+            {
+                characters.Clear();
+                characters = null;
+            }
+
             hScene = null;
             hSprite = null;
             hFlagCtrl = null;
@@ -248,6 +327,17 @@ namespace HS2_BetterHScenes
         {
             if(alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.Always || (alwaysGaugesHeart.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
                 __result = true;
+        }
+        
+        //-- Disable camera control when dragger ui open --//
+        [HarmonyPrefix, HarmonyPatch(typeof(CameraControl_Ver2), "LateUpdate")]
+        public static bool CameraControlVer2_LateUpdate_DisableCameraControl(CameraControl_Ver2 __instance)
+        {
+            if (!cameraShouldLock || !activeUI)
+                return true;
+
+            Traverse.Create(__instance).Property("isControlNow").SetValue(false);
+            return false;
         }
         
         //-- Tears, close eyes, stop blinking --//
@@ -270,11 +360,41 @@ namespace HS2_BetterHScenes
         //-- Prevent default animation change clothes strip --//
         [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetClothStateStartMotion")]
         public static bool HScene_SetClothStateStartMotion_PreventDefaultClothesStrip() => !preventDefaultAnimationChangeStrip.Value;
-        
+
         //-- Strip clothes when changing animation --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimVoiceFlag")]
         public static void HScene_ChangeAnimVoiceFlag_StripClothes() => HScene_StripClothes(stripMaleClothes.Value > Tools.OffHStartAnimChange.OnHStart, stripFemaleClothes.Value > Tools.OffHStartAnimChange.OnHStart);
 
+        //-- Set apply offsets --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation()
+        {
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
+
+        //-- Set apply offsets --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
+        private static void HScene_SetMovePositionPoint()
+        {
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
+
+        //-- Save current motion --//
+        //-- Set apply offsets --//
+        [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
+        private static void HScene_ChangeMotion(H_Lookat_dan __instance)
+        {
+            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value)
+                return;
+
+            currentMotion = __instance.strPlayMotion;
+
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
+        
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
         {
             if (stripMales)
