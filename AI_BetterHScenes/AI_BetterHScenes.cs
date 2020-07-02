@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using System.Collections.Generic;
 
 using HarmonyLib;
 
@@ -23,7 +24,7 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.4.0";
+        public const string VERSION = "2.5.0";
 
         public new static ManualLogSource Logger;
 
@@ -35,10 +36,13 @@ namespace AI_BetterHScenes
         private static Harmony harmony;
         
         private static VirtualCameraController hCamera;
-        
+
         public static List<ChaControl> characters;
         public static List<ChaControl> shouldCleanUp;
 
+        public static AnimationOffsets animationOffsets;
+        public static string currentMotion;
+        
         private static readonly System.Random rand = new System.Random();
         
         private static GameObject map;
@@ -52,12 +56,19 @@ namespace AI_BetterHScenes
         private static bool oldMapState;
         private static LightShadows oldSunShadowsState;
 
+        private static bool shouldApplyOffsets;
+
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
-        
+        private static ConfigEntry<bool> applySavedOffsets { get; set; }
+        public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
+        public static ConfigEntry<string> offsetFile { get; private set; }
+        public static ConfigEntry<float> sliderMaxPosition { get; private set; }
+        public static ConfigEntry<float> sliderMaxRotation{ get; private set; }
+
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
-        
+
         private static ConfigEntry<Tools.OffHStartAnimChange> stripMaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleBottom { get; set; }
@@ -67,7 +78,7 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.ClothesStrip> stripMalePantyhose { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleSocks { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripMaleShoes { get; set; }
-        
+
         private static ConfigEntry<Tools.OffHStartAnimChange> stripFemaleClothes { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleTop { get; set; }
         private static ConfigEntry<Tools.ClothesStrip> stripFemaleBottom { get; set; }
@@ -83,20 +94,20 @@ namespace AI_BetterHScenes
         private static ConfigEntry<Tools.OffWeaknessAlways> forceTears { get; set; }
         private static ConfigEntry<Tools.OffWeaknessAlways> forceCloseEyes { get; set; }
         private static ConfigEntry<Tools.OffWeaknessAlways> forceStopBlinking { get; set; }
-        
+
         //-- Cum --//
         private static ConfigEntry<Tools.AutoFinish> autoFinish { get; set; }
         private static ConfigEntry<Tools.AutoServicePrefer> autoServicePrefer { get; set; }
         private static ConfigEntry<Tools.AutoInsertPrefer> autoInsertPrefer { get; set; }
         public static ConfigEntry<Tools.CleanCum> cleanCumAfterH { get; private set; }
         private static ConfigEntry<bool> increaseBathDesire { get; set; }
-        
+
         //-- General --//
         private static ConfigEntry<Tools.OffWeaknessAlways> alwaysGaugesHeart { get; set; }
         public static ConfigEntry<bool> keepButtonsInteractive { get; private set; }
         private static ConfigEntry<int> hPointSearchRange { get; set; }
         private static ConfigEntry<bool> unlockCamera { get; set; }
-        
+
         //-- Performance --//
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> disableSunShadows { get; set; }
@@ -109,9 +120,21 @@ namespace AI_BetterHScenes
             shouldCleanUp = new List<ChaControl>();
 
             showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.M));
+            (applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
+            {
+                if (applySavedOffsets.Value)
+                {
+                    shouldApplyOffsets = true;
+                }
+            };
             
+            useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
+            offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
+            sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", (float)2.5, new ConfigDescription("Maximum limits of the position slider bars."));
+            sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", (float)45.0, new ConfigDescription("Maximum limits of the rotation slider bars."));
+
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
-            
+
             stripMaleClothes = Config.Bind("QoL > Clothes", "Should strip male clothes", Tools.OffHStartAnimChange.OnHStart, new ConfigDescription("Should strip male clothes during H"));
             stripMaleTop = Config.Bind("QoL > Clothes", "Strip male top", Tools.ClothesStrip.All, new ConfigDescription("Strip male top during H"));
             stripMaleBottom = Config.Bind("QoL > Clothes", "Strip male bottom", Tools.ClothesStrip.All, new ConfigDescription("Strip male bottom during H"));
@@ -152,11 +175,12 @@ namespace AI_BetterHScenes
 
                 hSprite.HpointSearchRange = hPointSearchRange.Value;
             };
+
             (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
             {
                 if (hCamera == null)
                     return;
-                
+
                 hCamera.isLimitDir = !unlockCamera.Value;
                 hCamera.isLimitPos = !unlockCamera.Value;
             };
@@ -165,16 +189,18 @@ namespace AI_BetterHScenes
             {
                 if (map == null)
                     return;
-                
+
                 map.SetActive(!disableMap.Value);
             };
+
             (disableSunShadows = Config.Bind("Performance Improvements", "Disable sun shadows", false, new ConfigDescription("Disable sun shadows during H scene"))).SettingChanged += (s, e) =>
             {
                 if (sun == null)
                     return;
-                
+
                 sun.shadows = disableSunShadows.Value ? LightShadows.None : LightShadows.Soft;
             };
+            
             (optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"))).SettingChanged += (s, e) =>
             {
                 if (collisionHelpers == null)
@@ -184,11 +210,15 @@ namespace AI_BetterHScenes
                 {
                     if (!optimizeCollisionHelpers.Value)
                         helper.forceUpdate = true;
-                    
+
                     helper.updateOncePerFrame = optimizeCollisionHelpers.Value;
                 }
             };
-            
+  
+            shouldApplyOffsets = false;
+            animationOffsets = new AnimationOffsets();
+            HSceneOffset.LoadOffsetsFromFile();
+
             harmony = new Harmony(nameof(AI_BetterHScenes));
             harmony.PatchAll(typeof(Transpilers));
         }
@@ -196,11 +226,12 @@ namespace AI_BetterHScenes
         //-- Draw chara draggers UI --//
         private void OnGUI()
         {
-            if(activeUI)
-                UI.DrawDraggersUI();
+            if (activeUI)
+                SliderUI.DrawDraggersUI();
         }
 
         //-- Patch & unpatch cause illusion don't do scenemanager anymore --//
+        //-- Apply chara offsets --//
         //-- Auto finish, togle chara draggers UI --//
         private void Update()
         {
@@ -213,9 +244,15 @@ namespace AI_BetterHScenes
 
             if (hScene == null)
                 return;
-            
+
             if (showDraggerUI.Value.IsDown())
                 activeUI = !activeUI;
+
+            if (shouldApplyOffsets && !hScene.NowChangeAnim)
+            {
+                HSceneOffset.ApplyCharacterOffsets();
+                shouldApplyOffsets = false;
+            }
 
             if (autoFinish.Value == Tools.AutoFinish.Off) 
                 return;
@@ -287,7 +324,7 @@ namespace AI_BetterHScenes
                 }
             }
         }
-        
+
         //-- Disable map, simulation to improve performance --//
         //-- Remove hcamera movement limit --//
         //-- Change H point search range --//
@@ -333,7 +370,7 @@ namespace AI_BetterHScenes
 
             oldMapState = map.activeSelf;
             oldSunShadowsState = sun.shadows;
-            
+
             if(disableMap.Value)
                 map.SetActive(false);
 
@@ -352,13 +389,14 @@ namespace AI_BetterHScenes
             Tools.hFlagCtrlTrav = Traverse.Create(hFlagCtrl);
             
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
-            UI.InitDraggersUI();
+                
+            SliderUI.InitDraggersUI();
             
             HScene_StripClothes(
                 stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
                 stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both
             );
-        }
+        }    
 
         //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
         //-- Set bath desire after h --//
@@ -375,30 +413,37 @@ namespace AI_BetterHScenes
 
             if (!increaseBathDesire.Value || manager.bMerchant) 
                 return;
-            
-            var agentTable = Singleton<Map>.Instance.AgentTable;
-            if (agentTable == null) 
-                return;
-            
-            foreach (var female in hScene.GetFemales().Where(female => female != null))
+
+            // Prone to errors from previous versions, trying to be safe
+            try
             {
-                var agent = agentTable.FirstOrDefault(pair =>
-                        pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female)
-                    .Value;
-                if (agent == null)
-                    continue;
+                var agentTable = Singleton<Map>.Instance.AgentTable;
+                if (agentTable == null) 
+                    return;
+                
+                foreach (var female in hScene.GetFemales().Where(female => female != null))
+                {
+                    var agent = agentTable.FirstOrDefault(pair => pair.Value != null && pair.Value.ChaControl != null && pair.Value.ChaControl == female).Value;
+                    if (agent == null)
+                        continue;
 
-                var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
-                var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
+                    var bathDesireType = Desire.GetDesireKey(Desire.Type.Bath);
+                    var lewdDesireType = Desire.GetDesireKey(Desire.Type.H);
 
-                var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0,
-                    100f);
-                var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0,
-                    100f);
-                var clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
-                var newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
+                    var clampedReason = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Reason), 0, 99999f, 0, 100f);
+                    var clampedDirty = Tools.Remap(agent.GetFlavorSkill(FlavorSkill.Type.Dirty), 0, 99999f, 0, 100f);
+                    var clampedLewd = agent.GetDesire(lewdDesireType) ?? 0;
+                    var newBathDesire = 100f + (clampedReason * 1.25f) - clampedDirty - clampedLewd * 1.5f;
 
-                agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                    agent.SetDesire(bathDesireType, Mathf.Clamp(newBathDesire, 0f, 100f));
+                }
+            }
+            catch(Exception ex)
+            {
+                Logger.LogMessage("HScene_EndProc_Patch error!");
+                Logger.LogWarning("HScene_EndProc_Patch error!");
+                
+                Console.WriteLine(ex);
             }
         }
 
@@ -416,11 +461,11 @@ namespace AI_BetterHScenes
         {
             if (!cameraShouldLock || !activeUI)
                 return true;
-            
+
             Traverse.Create(__instance).Property("isControlNow").SetValue(false);
             return false;
         }
-   
+
         //-- Tears, close eyes, stop blinking --//
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
         public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(ref HVoiceCtrl.FaceInfo _face)
@@ -444,13 +489,13 @@ namespace AI_BetterHScenes
         {
             if (collisionHelpers == null)
                 return;
-            
+
             collisionHelpers.Add(__instance);
-            
-            if(optimizeCollisionHelpers.Value)
+
+            if (optimizeCollisionHelpers.Value)
                 __instance.updateOncePerFrame = true;
         }
-        
+
         //-- Add character to the shouldCleanUp list --//
         [HarmonyPostfix, HarmonyPatch(typeof(SiruPasteCtrl), "Proc")]
         public static void SiruPasteCtrl_Proc_PopulateList(ChaControl ___chaFemale)
@@ -465,12 +510,12 @@ namespace AI_BetterHScenes
             var agent = Singleton<Map>.Instance.AgentTable.Values.FirstOrDefault(actor => actor != null && actor.ChaControl != null && actor.ChaControl == chara);
             if (agent == null)
                 return;
-            
+
             for (var i = 0; i < 5; i++)
             {
-                if (chara.GetSiruFlag((ChaFileDefine.SiruParts)i) == 0) 
+                if (chara.GetSiruFlag((ChaFileDefine.SiruParts)i) == 0)
                     continue;
-                
+
                 shouldCleanUp.Add(chara);
                 break;
             }
@@ -493,10 +538,40 @@ namespace AI_BetterHScenes
         //-- Clean up chara after bath if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(Bath), "OnCompletedStateTask")]
         public static void Bath_OnCompletedStateTask_CleanUpCum(Bath __instance) => Tools.CleanUpSiru(__instance);
-        
+
         //-- Clean up chara after changing if retaining cum effect --//
         [HarmonyPostfix, HarmonyPatch(typeof(ClothChange), "OnCompletedStateTask")]
         public static void ClothChange_OnCompletedStateTask_CleanUpCum(ClothChange __instance) => Tools.CleanUpSiru(__instance);
+        
+        //-- Set apply offsets --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
+        private static void HScene_ChangeAnimation()
+        {
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
+
+        //-- Set apply offsets --//
+        [HarmonyPrefix, HarmonyPatch(typeof(HScene), "SetMovePositionPoint")]
+        private static void HScene_SetMovePositionPoint()
+        {
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
+
+        //-- Save current motion --//
+        //-- Set apply offsets --//
+        [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
+        private static void HScene_ChangeMotion(H_Lookat_dan __instance)
+        {
+            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value)
+                return;
+
+            currentMotion = __instance.strPlayMotion;
+
+            if (applySavedOffsets.Value)
+                shouldApplyOffsets = true;
+        }
         
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
         {
