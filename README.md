@@ -14,7 +14,7 @@ This plugin fixes HScene performance bugs and adds extra features
 * [AI] Change H Point search range  
 * [AI] Keep H buttons interactive during orgasm **(See notes #2)**  
 * [AI] Retain cum after H (can be cleaned by bathing / changing clothes)  
-* [AI] Character position UI with ability to select multiple characters and axis  
+* Character dragger UI with ability to save offsets for different characters, animations, motions  
 * Close eyes, turn off blinking weakness/all the time during H    
 * [AI] Clean or keep cum on Merchant after H (if retain is enabled)  
 * Always heart gauge  
