@@ -49,6 +49,7 @@ namespace AI_BetterHScenes
         private static Light sun;
         private static List<SkinnedCollisionHelper> collisionHelpers;
 
+        private static bool OnHStart;
         private static bool activeUI;
         private static bool patched;
         
@@ -391,11 +392,6 @@ namespace AI_BetterHScenes
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
                 
             SliderUI.InitDraggersUI();
-            
-            HScene_StripClothes(
-                stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
-                stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.Both
-            );
         }    
 
         //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
@@ -410,6 +406,7 @@ namespace AI_BetterHScenes
                 sun.shadows = oldSunShadowsState;
 
             activeUI = false;
+            OnHStart = false;
 
             if (!increaseBathDesire.Value || manager.bMerchant) 
                 return;
@@ -447,6 +444,22 @@ namespace AI_BetterHScenes
             }
         }
 
+        //-- Strip on start of H scene --//
+        //-- fuck you illusion for giving me 21 headaches over this when it's supposed to work everywhere else I patched. Why the fuck is it working for females but not males in the same fucking line of code, why do I have to pick other places to patch. Fuck you, fuck you and FUCK YOU!! --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SyncAnimation")]
+        public static void HScene_SyncAnimation_StripClothes()
+        {
+            if (!OnHStart)
+            {
+                HScene_StripClothes(
+                    stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
+                    stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.Both
+                );
+                
+                OnHStart = true;
+            }
+        }
+        
         //-- Always gauges heart --//
         [HarmonyPostfix, HarmonyPatch(typeof(FeelHit), "isHit")]
         public static void FeelHit_isHit_AlwaysGaugesHeart(ref bool __result)

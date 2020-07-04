@@ -311,7 +311,7 @@ namespace HS2_BetterHScenes
         //-- Strip on start of H scene --//
         //-- fuck you illusion for giving me 21 headaches over this when it's supposed to work everywhere else I patched. Why the fuck is it working for females but not males in the same fucking line of code, why do I have to pick other places to patch. Fuck you, fuck you and FUCK YOU!! --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
-        public static void HScene_SetStartVoice_CacheMode()
+        public static void HScene_SetStartVoice_StripClothes()
         {
             HScene_StripClothes(
                 stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
