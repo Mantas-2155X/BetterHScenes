@@ -24,7 +24,7 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.0";
+        public const string VERSION = "2.5.1";
 
         public new static ManualLogSource Logger;
 
@@ -394,7 +394,7 @@ namespace AI_BetterHScenes
             
             HScene_StripClothes(
                 stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
-                stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both
+                stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.Both
             );
         }    
 

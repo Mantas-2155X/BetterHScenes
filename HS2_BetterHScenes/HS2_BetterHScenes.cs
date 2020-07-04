@@ -20,7 +20,7 @@ namespace HS2_BetterHScenes
     [BepInProcess("HoneySelect2")]
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.0";
+        public const string VERSION = "2.5.1";
         
         public new static ManualLogSource Logger;
 
@@ -289,11 +289,6 @@ namespace HS2_BetterHScenes
             SliderUI.InitDraggersUI();
             
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
-            
-            HScene_StripClothes(
-                stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
-                stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both
-                );
         }
         
         //-- End of HScene --//
@@ -311,6 +306,17 @@ namespace HS2_BetterHScenes
             hScene = null;
             hSprite = null;
             hFlagCtrl = null;
+        }
+        
+        //-- Strip on start of H scene --//
+        //-- fuck you illusion for giving me 21 headaches over this when it's supposed to work everywhere else I patched. Why the fuck is it working for females but not males in the same fucking line of code, why do I have to pick other places to patch. Fuck you, fuck you and FUCK YOU!! --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
+        public static void HScene_SetStartVoice_CacheMode()
+        {
+            HScene_StripClothes(
+                stripMaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripMaleClothes.Value == Tools.OffHStartAnimChange.Both, 
+                stripFemaleClothes.Value == Tools.OffHStartAnimChange.OnHStart || stripFemaleClothes.Value == Tools.OffHStartAnimChange.Both
+            );
         }
         
         //-- Cache current animation mode --//
