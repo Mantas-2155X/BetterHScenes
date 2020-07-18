@@ -68,7 +68,7 @@ namespace AI_BetterHScenes
                             bValidOffsetsFound = true;
                         }
                         
-                        AI_BetterHScenes.Logger.LogMessage("Offsets Applied");
+                        //AI_BetterHScenes.Logger.LogMessage("Offsets Applied");
                     }
                 }
             }

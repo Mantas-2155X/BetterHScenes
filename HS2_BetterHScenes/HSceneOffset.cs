@@ -68,7 +68,7 @@ namespace HS2_BetterHScenes
                             bValidOffsetsFound = true;
                         }
                         
-                        HS2_BetterHScenes.Logger.LogMessage("Offsets Applied");
+                        //HS2_BetterHScenes.Logger.LogMessage("Offsets Applied");
                     }
                 }
             }

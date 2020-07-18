@@ -40,7 +40,7 @@
           <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\HoneySelect2_Data\Managed\Assembly-CSharp.dll</HintPath>
             <Private>False</Private>
         </Reference>
-        <Reference Include="BepInEx, Version=5.1.0.0, Culture=neutral, PublicKeyToken=null">
+        <Reference Include="BepInEx, Version=5.2.0.0, Culture=neutral, PublicKeyToken=null">
           <HintPath>..\..\..\..\..\..\media\illusion\HoneySelect 2\BepInEx\core\BepInEx.dll</HintPath>
             <Private>False</Private>
         </Reference>

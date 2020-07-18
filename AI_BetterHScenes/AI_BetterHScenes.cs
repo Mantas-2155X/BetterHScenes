@@ -24,7 +24,7 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.1";
+        public const string VERSION = "2.5.2";
 
         public new static ManualLogSource Logger;
 
@@ -124,15 +124,13 @@ namespace AI_BetterHScenes
             (applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
             {
                 if (applySavedOffsets.Value)
-                {
                     shouldApplyOffsets = true;
-                }
             };
             
             useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
             offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
-            sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", (float)2.5, new ConfigDescription("Maximum limits of the position slider bars."));
-            sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", (float)45.0, new ConfigDescription("Maximum limits of the rotation slider bars."));
+            sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the position slider bars."));
+            sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the rotation slider bars."));
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
 
@@ -227,7 +225,7 @@ namespace AI_BetterHScenes
         //-- Draw chara draggers UI --//
         private void OnGUI()
         {
-            if (activeUI)
+            if (activeUI && hScene != null)
                 SliderUI.DrawDraggersUI();
         }
 
