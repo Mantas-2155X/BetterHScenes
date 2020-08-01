@@ -573,9 +573,9 @@ namespace AI_BetterHScenes
         //-- Save current motion --//
         //-- Set apply offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
-        private static void HScene_ChangeMotion(string _strAnmName)
+        private static void HScene_ChangeMotion(ChaControl __instance, string _strAnmName)
         {
-            if (useOneOffsetForAllMotions.Value || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
+            if (useOneOffsetForAllMotions.Value || __instance == null || __instance.isPlayer == false  || _strAnmName.IsNullOrEmpty())
                 return;
 
             currentMotion = _strAnmName;
