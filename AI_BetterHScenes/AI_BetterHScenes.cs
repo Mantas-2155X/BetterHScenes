@@ -572,18 +572,18 @@ namespace AI_BetterHScenes
 
         //-- Save current motion --//
         //-- Set apply offsets --//
-        [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "setInfo")]
-        private static void HScene_ChangeMotion(H_Lookat_dan __instance)
+        [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
+        private static void HScene_ChangeMotion(ChaControl __instance, string _strAnmName)
         {
-            if (__instance.strPlayMotion == null || useOneOffsetForAllMotions.Value)
+            if (useOneOffsetForAllMotions.Value || __instance == null || __instance.isPlayer == false  || _strAnmName.IsNullOrEmpty())
                 return;
 
-            currentMotion = __instance.strPlayMotion;
+            currentMotion = _strAnmName;
 
             if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
         }
-        
+
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
         {
             if (stripMales)
