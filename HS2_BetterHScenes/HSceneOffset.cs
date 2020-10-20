@@ -62,9 +62,11 @@ namespace HS2_BetterHScenes
                             
                             var positionOffset = new Vector3(characterOffsets.PositionOffsetX, characterOffsets.PositionOffsetY, characterOffsets.PositionOffsetZ);
                             var rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
-                            
-                            character.SetPosition(positionOffset);
-                            character.SetRotation(rotationOffset);
+
+                            var characterBody = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(HS2_BetterHScenes.bodyTransform)).FirstOrDefault();
+                            characterBody.localPosition = positionOffset;
+                            characterBody.localEulerAngles= rotationOffset;
+
                             bValidOffsetsFound = true;
                         }
                         
@@ -78,8 +80,9 @@ namespace HS2_BetterHScenes
             {
                 foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null))
                 {
-                    character.SetPosition(new Vector3(0, 0, 0));
-                    character.SetRotation(new Vector3(0, 0, 0));
+                    var characterBody = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(HS2_BetterHScenes.bodyTransform)).FirstOrDefault();
+                    characterBody.localPosition = new Vector3(0, 0, 0);
+                    characterBody.localEulerAngles = new Vector3(0, 0, 0);
                 }
             }
             

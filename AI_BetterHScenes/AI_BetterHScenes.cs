@@ -59,6 +59,8 @@ namespace AI_BetterHScenes
 
         private static bool shouldApplyOffsets;
 
+        public const string bodyTransform = "cf_N_height";
+
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }

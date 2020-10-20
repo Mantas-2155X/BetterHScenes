@@ -49,8 +49,9 @@ namespace AI_BetterHScenes
         {
             for(var charIndex = 0; charIndex < validCharacters.Count; charIndex++)
             {
-                charLastPosition[charIndex] = charPosition[charIndex] = validCharacters[charIndex].GetPosition();
-                charLastRotation[charIndex] = charRotation[charIndex] = validCharacters[charIndex].GetRotation();
+                var characterBody = validCharacters[charIndex].GetComponentsInChildren<Transform>().Where(x => x.name.Contains(AI_BetterHScenes.bodyTransform)).FirstOrDefault();
+                charLastPosition[charIndex] = charPosition[charIndex] = characterBody.localPosition;
+                charLastRotation[charIndex] = charRotation[charIndex] = characterBody.localEulerAngles;
 
                 if (charRotation[charIndex].x > 180)
                     charLastRotation[charIndex].x = charRotation[charIndex].x = charRotation[charIndex].x - 360;
@@ -66,9 +67,11 @@ namespace AI_BetterHScenes
         {
             if (charIndex >= validCharacters.Count) 
                 return;
-            
-            validCharacters[charIndex].SetPosition(position);
-            validCharacters[charIndex].SetRotation(rotation);
+
+            var characterBody = validCharacters[charIndex].GetComponentsInChildren<Transform>().Where(x => x.name.Contains(AI_BetterHScenes.bodyTransform)).FirstOrDefault();
+            characterBody.localPosition = position;
+            characterBody.localEulerAngles = rotation;
+
         }
 
         private static void SavePosition(bool bAsDefault = false)
@@ -90,10 +93,8 @@ namespace AI_BetterHScenes
             foreach (var character in validCharacters.Where(character => character != null && character.visibleAll))
             {
                 var characterName = character.fileParam.fullname;
-                var characterPosition = character.GetPosition();
-                var characterAngle = character.GetRotation();
-
-                var characterOffsets = new CharacterOffsets(characterName, characterPosition, characterAngle);
+                var characterBody = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(AI_BetterHScenes.bodyTransform)).FirstOrDefault();
+                var characterOffsets = new CharacterOffsets(characterName, characterBody.localPosition, characterBody.localEulerAngles);
 
                 characterPair.AddCharacterOffset(characterOffsets);
             }
@@ -138,7 +139,7 @@ namespace AI_BetterHScenes
             {
                 if (charPosition[charIndex] == charLastPosition[charIndex] && charRotation[charIndex] == charLastRotation[charIndex]) 
                     continue;
-                
+
                 MoveCharacter(charIndex, charPosition[charIndex], charRotation[charIndex]);
                 charLastPosition[charIndex] = charPosition[charIndex];
                 charLastRotation[charIndex] = charRotation[charIndex];

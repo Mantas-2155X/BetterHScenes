@@ -20,7 +20,7 @@ namespace HS2_BetterHScenes
     [BepInProcess("HoneySelect2")]
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.2";
+        public const string VERSION = "2.5.3";
         
         public new static ManualLogSource Logger;
 
@@ -42,6 +42,8 @@ namespace HS2_BetterHScenes
         private static bool cameraShouldLock;
 
         public static string currentMotion;
+
+        public const string bodyTransform = "cf_N_height";
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -250,7 +252,14 @@ namespace HS2_BetterHScenes
                 }
             }
         }
-        
+
+        //-- Start of HScene --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "LateUpdate")]
+        public static void HScene_LateUpdate(/*HScene __instance, HSceneSprite ___sprite*/)
+        {
+            SliderUI.ApplyPositions();
+        }
+
         //-- Start of HScene --//
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartAnimationInfo")]
         public static void HScene_SetStartAnimationInfo_Patch(HScene __instance, HSceneSprite ___sprite)
