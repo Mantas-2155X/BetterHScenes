@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
 
@@ -15,77 +16,71 @@ namespace HS2_BetterHScenes
             var bValidOffsetsFound = false;
 
             if (currentAnimation == null)
-            {
-                HS2_BetterHScenes.Logger.LogMessage("null Animation");
-            }
-            else
-            {
-                if (HS2_BetterHScenes.currentMotion == null)
-                    HS2_BetterHScenes.currentMotion = "default";
+                return;
 
-                string characterPairName = null;
-                foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
+            if (HS2_BetterHScenes.currentMotion == null)
+                HS2_BetterHScenes.currentMotion = "default";
+
+            string characterPairName = null;
+            foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
+            {
+                if (characterPairName == null)
+                    characterPairName = character.fileParam.fullname;
+                else
+                    characterPairName += "_" + character.fileParam.fullname;
+            }
+
+            var animationList = HS2_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
+            if (animationList != null && characterPairName != null)
+            {
+                MotionList motionList;
+                if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value)
                 {
-                    if (characterPairName == null)
-                        characterPairName = character.fileParam.fullname;
-                    else
-                        characterPairName += "_" + character.fileParam.fullname;
+                    motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                }
+                else
+                {
+                    motionList = animationList.MotionList.Find(x => x.MotionName == HS2_BetterHScenes.currentMotion);
+                    if (motionList == null)
+                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                    else if (motionList.MotionName != HS2_BetterHScenes.currentMotion)
+                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
                 }
 
-                var animationList = HS2_BetterHScenes.animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
-                if (animationList != null && characterPairName != null)
+                var characterPair = motionList?.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
+                if (characterPair != null)
                 {
-                    MotionList motionList;
-                    if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value)
+                    for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
                     {
-                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
+                        var characterOffsetParameters = characterPair.CharacterOffsets.Find(x => x.CharacterName == HS2_BetterHScenes.characters[charIndex].fileParam.fullname);
+                        if (characterOffsetParameters == null)
+                            continue;
+
+                        OffsetVectors[] loadOffsets = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+                        loadOffsets[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(characterOffsetParameters.PositionOffsetX, characterOffsetParameters.PositionOffsetY, characterOffsetParameters.PositionOffsetZ),
+                                                                                 new Vector3(characterOffsetParameters.RotationOffsetP, characterOffsetParameters.RotationOffsetY, characterOffsetParameters.RotationOffsetR));
+                        loadOffsets[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(characterOffsetParameters.LeftHandPositionOffsetX, characterOffsetParameters.LeftHandPositionOffsetY, characterOffsetParameters.LeftHandPositionOffsetZ),
+                                                                                new Vector3(characterOffsetParameters.LeftHandRotationOffsetP, characterOffsetParameters.LeftHandRotationOffsetY, characterOffsetParameters.LeftHandRotationOffsetR));
+                        loadOffsets[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(characterOffsetParameters.RightHandPositionOffsetX, characterOffsetParameters.RightHandPositionOffsetY, characterOffsetParameters.RightHandPositionOffsetZ),
+                                                                                 new Vector3(characterOffsetParameters.RightHandRotationOffsetP, characterOffsetParameters.RightHandRotationOffsetY, characterOffsetParameters.RightHandRotationOffsetR));
+                        loadOffsets[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(characterOffsetParameters.LeftFootPositionOffsetX, characterOffsetParameters.LeftFootPositionOffsetY, characterOffsetParameters.LeftFootPositionOffsetZ),
+                                                                                new Vector3(characterOffsetParameters.LeftFootRotationOffsetP, characterOffsetParameters.LeftFootRotationOffsetY, characterOffsetParameters.LeftFootRotationOffsetR));
+                        loadOffsets[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(characterOffsetParameters.RightFootPositionOffsetX, characterOffsetParameters.RightFootPositionOffsetY, characterOffsetParameters.RightFootPositionOffsetZ),
+                                                                                 new Vector3(characterOffsetParameters.RightFootRotationOffsetP, characterOffsetParameters.RightFootRotationOffsetY, characterOffsetParameters.RightFootRotationOffsetR));
+
+                        SliderUI.LoadOffsets(charIndex, loadOffsets);
+
+                        bValidOffsetsFound = true;
                     }
-                    else
-                    {
-                        motionList = animationList.MotionList.Find(x => x.MotionName == HS2_BetterHScenes.currentMotion);
-                        if (motionList == null)
-                            motionList = animationList.MotionList.Find(x => x.MotionName == "default");
-                        else if (motionList.MotionName != HS2_BetterHScenes.currentMotion)
-                            motionList = animationList.MotionList.Find(x => x.MotionName == "default");
-                    }
 
-                    var characterPair = motionList?.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
-
-                    if (characterPair != null)
-                    {
-                        foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null))
-                        {
-                            var characterOffsets = characterPair.CharacterOffsets.Find(x => x.CharacterName == character.fileParam.fullname);
-
-                            if (characterOffsets == null) 
-                                continue;
-                            
-                            var positionOffset = new Vector3(characterOffsets.PositionOffsetX, characterOffsets.PositionOffsetY, characterOffsets.PositionOffsetZ);
-                            var rotationOffset = new Vector3(characterOffsets.RotationOffsetP, characterOffsets.RotationOffsetY, characterOffsets.RotationOffsetR);
-
-                            var characterBody = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(HS2_BetterHScenes.bodyTransform)).FirstOrDefault();
-                            characterBody.localPosition = positionOffset;
-                            characterBody.localEulerAngles= rotationOffset;
-
-                            bValidOffsetsFound = true;
-                        }
-                        
-                        //HS2_BetterHScenes.Logger.LogMessage("Offsets Applied");
-                    }
+                    SliderUI.ApplyPositions();
                 }
             }
 
             // if we didn't find offsets to apply, move the characters to their 0 position, in case they were moved out of it from another offset.
             if (!bValidOffsetsFound)
-            {
-                foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null))
-                {
-                    var characterBody = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(HS2_BetterHScenes.bodyTransform)).FirstOrDefault();
-                    characterBody.localPosition = new Vector3(0, 0, 0);
-                    characterBody.localEulerAngles = new Vector3(0, 0, 0);
-                }
-            }
-            
+                SliderUI.ResetPositions();
+
             SliderUI.UpdateUIPositions();
         }
 

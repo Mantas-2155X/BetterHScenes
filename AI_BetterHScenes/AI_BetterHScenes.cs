@@ -24,26 +24,22 @@ namespace AI_BetterHScenes
     [BepInProcess("AI-Syoujyo")]
     public class AI_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.2";
+        public const string VERSION = "2.5.5";
 
         public new static ManualLogSource Logger;
+
+        private static readonly System.Random rand = new System.Random();
 
         private static HScene hScene;
         public static HSceneManager manager;
         public static HSceneFlagCtrl hFlagCtrl;
         private static HSceneSprite hSprite;
+        private static VirtualCameraController hCamera;
 
         private static Harmony harmony;
         
-        private static VirtualCameraController hCamera;
-
         public static List<ChaControl> characters;
-        public static List<ChaControl> shouldCleanUp;
-
-        public static AnimationOffsets animationOffsets;
-        public static string currentMotion;
-        
-        private static readonly System.Random rand = new System.Random();
+        public static List<ChaControl> shouldCleanUp;     
         
         private static GameObject map;
         private static Light sun;
@@ -57,9 +53,9 @@ namespace AI_BetterHScenes
         private static bool oldMapState;
         private static LightShadows oldSunShadowsState;
 
+        public static AnimationOffsets animationOffsets;
         private static bool shouldApplyOffsets;
-
-        public const string bodyTransform = "cf_N_height";
+        public static string currentMotion;
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -326,7 +322,22 @@ namespace AI_BetterHScenes
             }
         }
 
-        //-- Disable map, simulation to improve performance --//
+        //-- IK Solver Patch --//
+        [HarmonyPrefix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
+        public static void HScene_LateUpdate(RootMotion.SolverManager __instance)
+        {
+            if (hScene == null)
+                return;
+
+            ChaControl character = __instance.GetComponentInParent<ChaControl>();
+
+            if (character == null)
+                return;
+
+            SliderUI.ApplyLimbOffsets(character.loadNo);
+        }
+
+        //-- Start of HScene --//
         //-- Remove hcamera movement limit --//
         //-- Change H point search range --//
         //-- Strip clothes when starting H --//
@@ -366,8 +377,18 @@ namespace AI_BetterHScenes
             characters = new List<ChaControl>();
             collisionHelpers = new List<SkinnedCollisionHelper>();
             
-            characters.AddRange(__instance.GetMales());
-            characters.AddRange(__instance.GetFemales());
+            List<ChaControl> maleCharacters = new List<ChaControl>();
+            maleCharacters.AddRange(__instance.GetMales());
+            foreach (var chara in maleCharacters.Where(chara => chara != null))
+                characters.Add(chara);
+
+            List<ChaControl> femaleCharacters = new List<ChaControl>();
+            femaleCharacters.AddRange(__instance.GetFemales());
+            foreach (var chara in femaleCharacters.Where(chara => chara != null))
+                characters.Add(chara);
+
+            if (characters == null)
+                return;
 
             oldMapState = map.activeSelf;
             oldSunShadowsState = sun.shadows;
@@ -577,7 +598,7 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
         private static void HScene_ChangeMotion(ChaControl __instance, string _strAnmName)
         {
-            if (useOneOffsetForAllMotions.Value || __instance == null || __instance.isPlayer == false  || _strAnmName.IsNullOrEmpty())
+            if (useOneOffsetForAllMotions.Value || __instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
                 return;
 
             currentMotion = _strAnmName;
@@ -601,7 +622,6 @@ namespace AI_BetterHScenes
                     stripMaleSocks.Value,  
                     stripMaleShoes.Value, 
                 };
-                
                 
                 foreach (var male in hScene.GetMales().Where(male => male != null))
                     foreach (var item in malesStrip.Select((x, i) => new { x, i }))

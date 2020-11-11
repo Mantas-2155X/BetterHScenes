@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 using HarmonyLib;
@@ -20,30 +21,30 @@ namespace HS2_BetterHScenes
     [BepInProcess("HoneySelect2")]
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
-        public const string VERSION = "2.5.3";
+        public const string VERSION = "2.5.5";
         
         public new static ManualLogSource Logger;
 
         private static readonly Random rand = new Random();
         
         private static HScene hScene;
-        private static HSceneSprite hSprite;
         public static HSceneFlagCtrl hFlagCtrl;
+        private static HSceneSprite hSprite;
         private static CameraControl_Ver2 cameraCtrl;
-        
-        public static AnimationOffsets animationOffsets;
+
         private static Traverse hSceneTrav;
         private static Harmony harmony;
         
         public static List<ChaControl> characters;
-        
+
+
         private static bool activeUI;
-        private static bool shouldApplyOffsets;
         private static bool cameraShouldLock;
 
+        public static AnimationOffsets animationOffsets;
+        private static bool shouldApplyOffsets;
         public static string currentMotion;
-
-        public const string bodyTransform = "cf_N_height";
+		public static int maleCount;
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -88,6 +89,8 @@ namespace HS2_BetterHScenes
         private static ConfigEntry<Tools.AutoServicePrefer> autoServicePrefer { get; set; }
         private static ConfigEntry<Tools.AutoInsertPrefer> autoInsertPrefer { get; set; }
         
+        
+
         //-- General --//
         private static ConfigEntry<bool> unlockCamera { get; set; }
         
@@ -253,11 +256,26 @@ namespace HS2_BetterHScenes
             }
         }
 
-        //-- Start of HScene --//
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "LateUpdate")]
-        public static void HScene_LateUpdate(/*HScene __instance, HSceneSprite ___sprite*/)
+        //-- IK Solver Patch --//
+        [HarmonyPrefix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
+        public static void HScene_LateUpdate(RootMotion.SolverManager __instance)
         {
-            SliderUI.ApplyPositions();
+            if (hScene == null)
+                return;
+
+            ChaControl character = __instance.GetComponentInParent<ChaControl>();
+
+            if (character == null)
+                return;
+
+            int charIndex = 1;
+
+            if (character.chaID == 0 || character.chaID == 1)
+                charIndex = maleCount + character.chaID;
+            else if (character.chaID == 99)
+                charIndex = 0;
+
+            SliderUI.ApplyLimbOffsets(charIndex);
         }
 
         //-- Start of HScene --//
@@ -290,9 +308,22 @@ namespace HS2_BetterHScenes
             cameraShouldLock = true;
             
             characters = new List<ChaControl>();
-            characters.AddRange(__instance.GetMales());
-            characters.AddRange(__instance.GetFemales());
-            
+
+            List<ChaControl> maleCharacters = new List<ChaControl>();
+            maleCharacters.AddRange(__instance.GetMales());
+            foreach (var chara in maleCharacters.Where(chara => chara != null))
+                characters.Add(chara);
+
+            maleCount = characters.Count;
+
+            List<ChaControl> femaleCharacters = new List<ChaControl>();
+            femaleCharacters.AddRange(__instance.GetFemales());
+            foreach (var chara in femaleCharacters.Where(chara => chara != null))
+                characters.Add(chara);
+
+            if (characters == null)
+                return;
+
             SliderUI.InitDraggersUI();
             
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
@@ -399,7 +430,7 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
         private static void HScene_ChangeMotion(ChaControl __instance, string _strAnmName)
         {
-            if (useOneOffsetForAllMotions.Value || __instance == null || __instance.isPlayer == false || _strAnmName.IsNullOrEmpty())
+            if (useOneOffsetForAllMotions.Value || __instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
                 return;
 
             currentMotion = _strAnmName;
@@ -407,7 +438,7 @@ namespace HS2_BetterHScenes
             if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
         }
-        
+
         private static void HScene_StripClothes(bool stripMales, bool stripFemales)
         {
             if (stripMales)
@@ -423,7 +454,6 @@ namespace HS2_BetterHScenes
                     stripMaleSocks.Value,  
                     stripMaleShoes.Value, 
                 };
-                
                 
                 foreach (var male in hScene.GetMales().Where(male => male != null))
                     foreach (var item in malesStrip.Select((x, i) => new { x, i }))
