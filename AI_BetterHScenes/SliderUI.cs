@@ -171,6 +171,14 @@ namespace AI_BetterHScenes
             lineStyle.margin.top = lineStyle.margin.bottom = 1;
             lineStyle.padding.top = lineStyle.padding.bottom = 1;
 
+            GUIStyle gridStyle = new GUIStyle("Button");
+            gridStyle.onNormal.background = Texture2D.whiteTexture;
+            gridStyle.onNormal.textColor = Color.black;
+            gridStyle.onHover.background = Texture2D.whiteTexture;
+            gridStyle.onHover.textColor = Color.black;
+            gridStyle.onActive.background = Texture2D.whiteTexture;
+            gridStyle.onActive.textColor = Color.black;
+
             string[] characterNames = new string[AI_BetterHScenes.characters.Count];
             string[] offsetNames = new string[] { "Whole Body", "Left Hand", "Right Hand", "Left Foot", "Right Foot" };
             for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
@@ -180,16 +188,16 @@ namespace AI_BetterHScenes
 
             using (GUILayout.VerticalScope guiVerticalScope = new GUILayout.VerticalScope("box"))
             {
-                selectedCharacter = GUILayout.SelectionGrid(selectedCharacter, characterNames, AI_BetterHScenes.characters.Count, GUILayout.Height(30));
+                selectedCharacter = GUILayout.SelectionGrid(selectedCharacter, characterNames, AI_BetterHScenes.characters.Count, gridStyle, GUILayout.Height(30));
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
-                selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, GUILayout.Height(30));
+                selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
-                    GUILayout.Space(2 * uiWidth / 5);
-                    linkHands[selectedCharacter] = GUILayout.Toggle(linkHands[selectedCharacter], " Link Hands", GUILayout.Width(uiWidth / 5));
-                    GUILayout.Space(uiWidth / 5);
-                    linkFeet[selectedCharacter] = GUILayout.Toggle(linkFeet[selectedCharacter], " Link Feet", GUILayout.Width(uiWidth / 5));
+                    GUILayout.Space((uiWidth / 5) - 10);
+                    linkHands[selectedCharacter] = GUILayout.Toggle(linkHands[selectedCharacter], "Link Hands", gridStyle);
+                    linkFeet[selectedCharacter] = GUILayout.Toggle(linkFeet[selectedCharacter], "Link Feet", gridStyle);
                 }
+                GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
 
                 float sliderMaxRotation = AI_BetterHScenes.sliderMaxRotation.Value;
