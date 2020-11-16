@@ -19,17 +19,20 @@ namespace HS2_BetterHScenes
     {
         public Vector3 position = new Vector3(0, 0, 0);
         public Vector3 rotation = new Vector3(0, 0, 0);
+        public Vector3 hintPosition = new Vector3(0, 0, 0);
 
         public OffsetVectors()
         {
             position = new Vector3(0, 0, 0);
             rotation = new Vector3(0, 0, 0);
+            hintPosition = new Vector3(0, 0, 0);
         }
 
-        public OffsetVectors(Vector3 initPosition, Vector3 initRotation)
+        public OffsetVectors(Vector3 initPosition, Vector3 initRotation, Vector3 initHintPosition)
         {
             position = initPosition;
             rotation = initRotation;
+            hintPosition = initHintPosition;
         }
     }
 
@@ -40,18 +43,25 @@ namespace HS2_BetterHScenes
         public const string rightHandTransformName = "f_t_arm_R";
         public const string leftFootTransformName = "f_t_leg_L";
         public const string rightFootTransform = "f_t_leg_R";
+        public const string leftElbowTransformName = "f_t_elbo_L";
+        public const string rightElbowTransformName = "f_t_elbo_R";
+        public const string leftKneeTransformName = "f_t_knee_L";
+        public const string rightKneeTransform = "f_t_knee_R";
 
         public static readonly string[] offsetTransformNames = { bodyTransformName, leftHandTransformName, rightHandTransformName, leftFootTransformName, rightFootTransform };
-        public Transform[] offsetTransforms = new Transform[(int)BodyPart.BodyPartsCount];
-        public OffsetVectors[] offsetVectors = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+        public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransform };
+        public Transform[] offsetTransforms = new Transform[offsetTransformNames.Length];
+        public Transform[] hintTransforms = new Transform[hintTransformNames.Length];
+        public OffsetVectors[] offsetVectors = new OffsetVectors[offsetTransformNames.Length];
         public bool allLimbsFound;
 
         public int LeftHand { get; private set; }
 
         public CharacterOffsetLocations()
         {
-            offsetVectors = new OffsetVectors[(int)BodyPart.BodyPartsCount];
-            offsetTransforms = new Transform[(int)BodyPart.BodyPartsCount];
+            offsetVectors = new OffsetVectors[offsetTransformNames.Length];
+            offsetTransforms = new Transform[offsetTransformNames.Length];
+            hintTransforms = new Transform[hintTransformNames.Length];
 
             for (var offset = 0; offset < offsetVectors.Length; offset++)
                 offsetVectors[offset] = new OffsetVectors();
@@ -70,6 +80,13 @@ namespace HS2_BetterHScenes
                     return;
             }
 
+            for (var offset = 0; offset < hintTransformNames.Length; offset++)
+            {
+                hintTransforms[offset] = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(hintTransformNames[offset])).FirstOrDefault();
+                if (hintTransforms[offset] == null)
+                    return;
+            }
+			
             allLimbsFound = true;
         }
 
@@ -80,7 +97,7 @@ namespace HS2_BetterHScenes
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {           
-                if (offsetTransforms[offset] == null)
+                if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null)
                     continue;
 
                 if (offsetVectors[offset].position != new Vector3(0, 0, 0))
@@ -88,6 +105,9 @@ namespace HS2_BetterHScenes
 
                 if (offsetVectors[offset].rotation != new Vector3(0, 0, 0))
                     offsetTransforms[offset].eulerAngles += offsetVectors[offset].rotation;
+
+                if (offsetVectors[offset].hintPosition != new Vector3(0, 0, 0))
+                    hintTransforms[offset].localPosition += offsetVectors[offset].hintPosition;
             }
         }
     }

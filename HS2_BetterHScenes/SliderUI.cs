@@ -13,27 +13,19 @@ namespace HS2_BetterHScenes
 
         public static int selectedCharacter = 0;
         public static int selectedOffset = 0;
-        public static bool[] linkHands;
-        public static bool[] linkFeet;
 
         private static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
-
-
 
         public static void InitDraggersUI()
         {
             characterOffsets = new CharacterOffsetLocations[HS2_BetterHScenes.characters.Count];
             copyOffsetVectors = new OffsetVectors[HS2_BetterHScenes.characters.Count][];
-            linkHands = new bool[HS2_BetterHScenes.characters.Count];
-            linkFeet = new bool[HS2_BetterHScenes.characters.Count];
 
             for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
             {
                 characterOffsets[charIndex] = new CharacterOffsetLocations();
                 copyOffsetVectors[charIndex] = new OffsetVectors[(int)BodyPart.BodyPartsCount];
-                linkHands[charIndex] = false;
-                linkFeet[charIndex] = false;
 
                 characterOffsets[charIndex].LoadCharacterTransforms(HS2_BetterHScenes.characters[charIndex]);
             }
@@ -119,7 +111,7 @@ namespace HS2_BetterHScenes
             {
                 for (var bodyPart = 0; bodyPart < copyOffsetVectors[charIndex].Length; bodyPart++)
                 {
-                    copyOffsetVectors[charIndex][bodyPart] = new OffsetVectors(characterOffsets[charIndex].offsetVectors[bodyPart].position, characterOffsets[charIndex].offsetVectors[bodyPart].rotation);
+                    copyOffsetVectors[charIndex][bodyPart] = new OffsetVectors(characterOffsets[charIndex].offsetVectors[bodyPart].position, characterOffsets[charIndex].offsetVectors[bodyPart].rotation, characterOffsets[charIndex].offsetVectors[bodyPart].hintPosition);
                 }
             }
         }
@@ -130,7 +122,7 @@ namespace HS2_BetterHScenes
             {
                 for (var bodyPart = 0; bodyPart < copyOffsetVectors[charIndex].Length; bodyPart++)
                 {
-                    characterOffsets[charIndex].offsetVectors[bodyPart] = new OffsetVectors(copyOffsetVectors[charIndex][bodyPart].position, copyOffsetVectors[charIndex][bodyPart].rotation);
+                    characterOffsets[charIndex].offsetVectors[bodyPart] = new OffsetVectors(copyOffsetVectors[charIndex][bodyPart].position, copyOffsetVectors[charIndex][bodyPart].rotation, copyOffsetVectors[charIndex][bodyPart].hintPosition);
                 }
             }
 
@@ -143,7 +135,7 @@ namespace HS2_BetterHScenes
             {
                 for (var offset = 0; offset < characterOffsets[charIndex].offsetVectors.Length; offset++)
                 {
-                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(new Vector3(0, 0, 0), new Vector3(0, 0, 0));
+                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 0));
                 }
             }
 
@@ -196,14 +188,22 @@ namespace HS2_BetterHScenes
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
                     GUILayout.Space((uiWidth / 5) - 10);
-                    linkHands[selectedCharacter] = GUILayout.Toggle(linkHands[selectedCharacter], "Link Hands", gridStyle);
-                    linkFeet[selectedCharacter] = GUILayout.Toggle(linkFeet[selectedCharacter], "Link Feet", gridStyle);
+                    if (GUILayout.Button("Mirror Active Limb"))
+                        MirrorActiveLimb();
                 }
+
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
 
                 float sliderMaxRotation = HS2_BetterHScenes.sliderMaxRotation.Value;
+                float sliderMaxPosition = HS2_BetterHScenes.sliderMaxPosition.Value;
                 if (selectedOffset != 0)
+                {
                     sliderMaxRotation *= 2;
+                    sliderMaxPosition /= 2;
+                }
+
+                Vector3 lastPosition = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
+                Vector3 lastRotation = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
 
                 using (GUILayout.HorizontalScope positionScope = new GUILayout.HorizontalScope("box"))
                 {
@@ -216,7 +216,7 @@ namespace HS2_BetterHScenes
                             if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                 characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x = 0;
                         }
-                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
+                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, -sliderMaxPosition, sliderMaxPosition);
                     }
 
                     using (GUILayout.VerticalScope verticalScopeY = new GUILayout.VerticalScope("box"))
@@ -228,7 +228,7 @@ namespace HS2_BetterHScenes
                             if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                 characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y = 0;
                         }
-                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
+                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, -sliderMaxPosition, sliderMaxPosition);
                     }
 
                     using (GUILayout.VerticalScope verticalScopeZ = new GUILayout.VerticalScope("box"))
@@ -240,7 +240,7 @@ namespace HS2_BetterHScenes
                             if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                 characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z = 0;
                         }
-                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z, -HS2_BetterHScenes.sliderMaxPosition.Value, HS2_BetterHScenes.sliderMaxPosition.Value);
+                        characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z, -sliderMaxPosition, sliderMaxPosition);
                     }
                 }
 
@@ -283,51 +283,50 @@ namespace HS2_BetterHScenes
                     }
                 }
 
-                if (linkHands[selectedCharacter])
+                if (selectedOffset != (int)BodyPart.WholeBody)
                 {
-                    if (selectedOffset == (int)BodyPart.LeftHand)
+                    using (GUILayout.HorizontalScope rotationScope = new GUILayout.HorizontalScope("box"))
                     {
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.x = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.y = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.z = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.z;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.x = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.z;
-                    }
-                    else if (selectedOffset == (int)BodyPart.RightHand)
-                    {
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.x = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.y = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].position.z = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].position.z;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.x = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftHand].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightHand].rotation.z;
+                        using (GUILayout.VerticalScope verticalScopeX = new GUILayout.VerticalScope("box"))
+                        {
+                            using (GUILayout.HorizontalScope horizontalScopeX = new GUILayout.HorizontalScope())
+                            {
+                                GUILayout.Label("Hint X");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = 0;
+                            }
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x, -sliderMaxPosition, sliderMaxPosition);
+                        }
+
+                        using (GUILayout.VerticalScope verticalScopeY = new GUILayout.VerticalScope("box"))
+                        {
+                            using (GUILayout.HorizontalScope horizontalScopeY = new GUILayout.HorizontalScope())
+                            {
+                                GUILayout.Label("Hint Y");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y = 0;
+                            }
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -sliderMaxPosition, sliderMaxPosition);
+                        }
+
+                        using (GUILayout.VerticalScope verticalScopeZ = new GUILayout.VerticalScope("box"))
+                        {
+                            using (GUILayout.HorizontalScope horizontalScopeZ = new GUILayout.HorizontalScope())
+                            {
+                                GUILayout.Label("Hint Z");
+
+                                if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
+                                    characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = 0;
+                            }
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z, -sliderMaxPosition, sliderMaxPosition);
+                        }
                     }
                 }
 
-                if (linkFeet[selectedCharacter])
-                {
-                    if (selectedOffset == (int)BodyPart.LeftFoot)
-                    {
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.x = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.y = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.z = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.z;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.x = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.z;
-                    }
-                    else if (selectedOffset == (int)BodyPart.RightFoot)
-                    {
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.x = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.y = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].position.z = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].position.z;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.x = characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.x;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.y;
-                        characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.LeftFoot].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[(int)BodyPart.RightFoot].rotation.z;
-                    }
-                }
-
-                ApplyPositions();
+                if ((selectedOffset == (int)BodyPart.WholeBody) && (lastPosition != characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position || lastRotation != characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation))
+                    ApplyPositions();
 
                 using (GUILayout.HorizontalScope controlScope = new GUILayout.HorizontalScope("box"))
                 {
@@ -352,6 +351,36 @@ namespace HS2_BetterHScenes
             }
 
             GUI.DragWindow();
+        }
+
+        private static void MirrorActiveLimb()
+        {
+            int mirroredOffset;
+
+            switch(selectedOffset)
+            {
+                case (int)BodyPart.LeftHand:
+                    mirroredOffset = (int)BodyPart.RightHand;
+                    break;
+                case (int)BodyPart.RightHand:
+                    mirroredOffset = (int)BodyPart.LeftHand;
+                    break;
+                case (int)BodyPart.LeftFoot:
+                    mirroredOffset = (int)BodyPart.RightFoot;
+                    break;
+                case (int)BodyPart.RightFoot:
+                    mirroredOffset = (int)BodyPart.LeftFoot;
+                    break;
+                default:
+                    return;
+            }
+
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].position.x = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].position.y = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].position.z = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.x = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.x;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.z;
         }
 
         public static void DrawDraggersUI() => window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));
