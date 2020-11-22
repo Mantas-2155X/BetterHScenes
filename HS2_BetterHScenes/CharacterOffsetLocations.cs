@@ -52,8 +52,12 @@ namespace HS2_BetterHScenes
         public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransform };
         public Transform[] offsetTransforms = new Transform[offsetTransformNames.Length];
         public Transform[] hintTransforms = new Transform[hintTransformNames.Length];
+        public Illusion.Component.Correct.BaseData[] baseData = new Illusion.Component.Correct.BaseData[offsetTransformNames.Length];
         public OffsetVectors[] offsetVectors = new OffsetVectors[offsetTransformNames.Length];
+        public Vector3[] lastBasePosition = new Vector3[offsetTransformNames.Length];
+        public Vector3[] lastBaseRotation = new Vector3[offsetTransformNames.Length];
         public bool allLimbsFound;
+        public bool dependentAnimation = false;
 
         public int LeftHand { get; private set; }
 
@@ -62,6 +66,9 @@ namespace HS2_BetterHScenes
             offsetVectors = new OffsetVectors[offsetTransformNames.Length];
             offsetTransforms = new Transform[offsetTransformNames.Length];
             hintTransforms = new Transform[hintTransformNames.Length];
+            baseData = new Illusion.Component.Correct.BaseData[offsetTransformNames.Length];
+            lastBasePosition = new Vector3[offsetTransformNames.Length];
+            lastBaseRotation = new Vector3[offsetTransformNames.Length];
 
             for (var offset = 0; offset < offsetVectors.Length; offset++)
                 offsetVectors[offset] = new OffsetVectors();
@@ -86,28 +93,96 @@ namespace HS2_BetterHScenes
                 if (hintTransforms[offset] == null)
                     return;
             }
-			
+
+            for (var offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
+            {
+                baseData[offset] = character.GetComponentsInChildren<Illusion.Component.Correct.BaseData>().Where(x => x.name.Contains(offsetTransformNames[offset])).FirstOrDefault();
+                if (baseData[offset] == null)
+                    return;
+
+                if (baseData[offset].bone != null)
+                {
+                    lastBasePosition[offset] = new Vector3(baseData[offset].bone.position.x, baseData[offset].bone.position.y, baseData[offset].bone.position.z);
+                    lastBaseRotation[offset] = new Vector3(baseData[offset].bone.eulerAngles.x, baseData[offset].bone.eulerAngles.y, baseData[offset].bone.eulerAngles.z);
+                }
+                else
+                {
+                    lastBasePosition[offset] = new Vector3(0, 0, 0);
+                    lastBaseRotation[offset] = new Vector3(0, 0, 0);
+                }
+            }
+
             allLimbsFound = true;
         }
 
-        public void ApplyLimbOffsets()
+        public void UpdateDependentStatus()
+        {
+            if (!allLimbsFound || !HS2_BetterHScenes.solveFemaleDependenciesFirst.Value)
+                return;
+
+            for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
+            {
+                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
+                {
+                    dependentAnimation = true;
+                    return;
+                }
+            }
+
+            dependentAnimation = false;
+        }
+
+        public void ApplyLimbOffsets(bool useLastSolverResult)
         {
             if (!allLimbsFound)
                 return;
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
-            {           
-                if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null)
+            {
+                if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null || baseData[offset] == null)
                     continue;
 
+                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
+                {
+                    if (useLastSolverResult)
+                        offsetTransforms[offset].position = lastBasePosition[offset];
+                    else
+                        offsetTransforms[offset].position = baseData[offset].bone.position;
+                }       
+
+                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
+                {
+                    if (useLastSolverResult)
+                        offsetTransforms[offset].eulerAngles = lastBaseRotation[offset];
+                    else
+                        offsetTransforms[offset].eulerAngles = baseData[offset].bone.eulerAngles;
+                }
+
                 if (offsetVectors[offset].position != new Vector3(0, 0, 0))
-                    offsetTransforms[offset].localPosition += offsetVectors[offset].position;
+                   offsetTransforms[offset].localPosition += offsetVectors[offset].position;
 
                 if (offsetVectors[offset].rotation != new Vector3(0, 0, 0))
-                    offsetTransforms[offset].eulerAngles += offsetVectors[offset].rotation;
+                    offsetTransforms[offset].localEulerAngles += offsetVectors[offset].rotation;
 
                 if (offsetVectors[offset].hintPosition != new Vector3(0, 0, 0))
                     hintTransforms[offset].localPosition += offsetVectors[offset].hintPosition;
+            }
+        }
+
+        public void SaveBasePoints()
+        {
+            for (var offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
+            {
+                if (baseData[offset].bone != null)
+                {
+                    lastBasePosition[offset] = new Vector3(baseData[offset].bone.position.x, baseData[offset].bone.position.y, baseData[offset].bone.position.z);
+                    lastBaseRotation[offset] = new Vector3(baseData[offset].bone.eulerAngles.x, baseData[offset].bone.eulerAngles.y, baseData[offset].bone.eulerAngles.z);
+                }
+                else
+                {
+                    lastBasePosition[offset] = new Vector3(0, 0, 0);
+                    lastBaseRotation[offset] = new Vector3(0, 0, 0);
+                }
             }
         }
     }

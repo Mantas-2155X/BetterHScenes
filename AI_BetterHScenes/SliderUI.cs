@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -13,8 +14,9 @@ namespace AI_BetterHScenes
 
         public static int selectedCharacter = 0;
         public static int selectedOffset = 0;
+        public static int selectedMotion = 0;
 
-        private static CharacterOffsetLocations[] characterOffsets;
+        public static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
 
         public static void InitDraggersUI()
@@ -38,7 +40,7 @@ namespace AI_BetterHScenes
             if (AI_BetterHScenes.characters.Count <= 0)
                 return;
 
-            for(var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
+            for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
             {
                 if (characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody] == null)
                     continue;
@@ -145,17 +147,19 @@ namespace AI_BetterHScenes
         public static void ApplyPositions()
         {
             for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
-            {  
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
-            }
         }
 
-        public static void ApplyLimbOffsets(int charIndex)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution)
         {
             if (charIndex < characterOffsets.Length)
-            {
-                characterOffsets[charIndex].ApplyLimbOffsets();
-            }
+                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution);
+        }
+
+        public static void UpdateDependentStatus()
+        {
+            for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
+                characterOffsets[charIndex].UpdateDependentStatus();
         }
 
         private static void DrawWindow(int id)
@@ -174,7 +178,7 @@ namespace AI_BetterHScenes
             gridStyle.onActive.textColor = Color.black;
 
             string[] characterNames = new string[AI_BetterHScenes.characters.Count];
-            string[] offsetNames = new string[] { "Whole Body", "Left Hand", "Right Hand", "Left Foot", "Right Foot"};
+            string[] offsetNames = new string[] { "Whole Body", "Left Hand", "Right Hand", "Left Foot", "Right Foot" };
             for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
             {
                 characterNames[charIndex] = AI_BetterHScenes.characters[charIndex].fileParam.fullname;
@@ -190,6 +194,17 @@ namespace AI_BetterHScenes
                     GUILayout.Space((uiWidth / 5) - 10);
                     if (GUILayout.Button("Mirror Active Limb"))
                         MirrorActiveLimb();
+                    if (AI_BetterHScenes.motionList != null && AI_BetterHScenes.motionList.Count > 0)
+                    {
+                        if (GUILayout.Button("Apply Motion"))
+                        {
+                            if (selectedMotion > AI_BetterHScenes.motionList.Count)
+                                selectedMotion = 0;
+
+                            Console.WriteLine("Apply Motion " + selectedMotion + ": " + AI_BetterHScenes.motionList[selectedMotion].anim);
+                            AI_BetterHScenes.SwitchAnimations(AI_BetterHScenes.motionList[selectedMotion].anim);
+                        }
+                    }
                 }
 
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
@@ -202,8 +217,13 @@ namespace AI_BetterHScenes
                     sliderMaxPosition /= 2;
                 }
 
-                Vector3 lastPosition = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
-                Vector3 lastRotation = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
+                Vector3 lastPosition = new Vector3(0, 0, 0);
+                Vector3 lastRotation = new Vector3(0, 0, 0);
+                if (selectedOffset == (int)BodyPart.WholeBody)
+                {
+                    lastPosition = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
+                    lastRotation = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
+                }
 
                 using (GUILayout.HorizontalScope positionScope = new GUILayout.HorizontalScope("box"))
                 {
@@ -306,7 +326,7 @@ namespace AI_BetterHScenes
                                 GUILayout.Label("Hint Y");
 
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
-                                    characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y = 0;
+                                    characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = 0;
                             }
                             characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -sliderMaxPosition, sliderMaxPosition);
                         }
@@ -350,6 +370,15 @@ namespace AI_BetterHScenes
                     if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
                         SavePosition(true);
                 }
+
+                if (AI_BetterHScenes.motionList != null && AI_BetterHScenes.motionList.Count > 0)
+                {
+                    string[] motionNames = new string[AI_BetterHScenes.motionList.Count];
+                    for (int motionIndex = 0; motionIndex < AI_BetterHScenes.motionList.Count; motionIndex++)
+                        motionNames[motionIndex] = AI_BetterHScenes.motionList[motionIndex].anim;
+
+                    selectedMotion = GUILayout.SelectionGrid(selectedMotion, motionNames, 6, gridStyle);
+                }
             }
 
             GUI.DragWindow();
@@ -359,7 +388,7 @@ namespace AI_BetterHScenes
         {
             int mirroredOffset;
 
-            switch(selectedOffset)
+            switch (selectedOffset)
             {
                 case (int)BodyPart.LeftHand:
                     mirroredOffset = (int)BodyPart.RightHand;
@@ -383,6 +412,15 @@ namespace AI_BetterHScenes
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.x = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.x;
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.y = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y;
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].rotation.z = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.z;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.x = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.y = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y;
+            characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.z = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z;
+        }
+
+        public static void SaveBasePoints()
+        {
+            for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
+                characterOffsets[charIndex].SaveBasePoints();
         }
 
         public static void DrawDraggersUI() => window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));
