@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/BetterHScenes/v16
+/AI_BetterHScenes/obj/Debug
+/HS2_BetterHScenes/obj/Debug
+/packages
