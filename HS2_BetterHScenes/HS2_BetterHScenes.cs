@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Collections;
 using System.Collections.Generic;
 
 using HarmonyLib;
@@ -63,6 +62,19 @@ namespace HS2_BetterHScenes
         public static string currentMotion;
 
         public static int hProcMode = 0;
+        public static bool bBaseReplacement = false;
+        public static bool bIdleGlowException = false;
+        public static bool bFootJobException = false;
+        public static bool bTwoFootException = false;
+        public static bool useReplacements = false;
+
+        private static List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" }; 
+        private static List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
+        private static List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
+        private static List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
+        private static List<string> rightKokanReplaceList = new List<string>() { "aia_f_14" };
+        private static List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20", "aia_f_21" };
+        private static List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -189,7 +201,10 @@ namespace HS2_BetterHScenes
         private void OnGUI()
         {
             if (activeUI && hScene != null)
+            {
                 SliderUI.DrawDraggersUI();
+                AnimationUI.DrawAnimationUI();
+            }
         }
 
         //-- Apply chara offsets --//
@@ -206,6 +221,7 @@ namespace HS2_BetterHScenes
             {
                 HSceneOffset.ApplyCharacterOffsets();
                 SliderUI.UpdateDependentStatus();
+                FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
                 shouldApplyOffsets = false;
             }
 
@@ -301,14 +317,19 @@ namespace HS2_BetterHScenes
             else if (character.chaID == 99)
                 charIndex = 0;
 
-            if (character.chaID != 0 && character.chaID != 1 && SliderUI.characterOffsets[charIndex].dependentAnimation)
+            if (character.chaID != 0 && character.chaID != 1 && solveFemaleDependenciesFirst.Value && SliderUI.characterOffsets[charIndex].dependentAnimation)
                 return false;
 
             if (character.chaID == 0 || character.chaID == 1)
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForFemales.Value);
+            {
+                bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
+                bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
+                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
+            }
             else
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value);
-
+            {
+                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false);
+            }
             return true;
         }
 
@@ -320,22 +341,23 @@ namespace HS2_BetterHScenes
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
 
-            if (character.chaID != 1 && (character.chaID != 0 || femaleCharacters[1] != null))
+            if (character.chaID != 0 || !solveFemaleDependenciesFirst.Value)
                 return;
 
-            if (solveFemaleDependenciesFirst.Value)
+            for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
             {
-                for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
+                if (SliderUI.characterOffsets[charIndex].dependentAnimation)
                 {
-                    if (SliderUI.characterOffsets[charIndex].dependentAnimation)
-                    {
-                        SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value);
-                        maleCharacters[charIndex].fullBodyIK.UpdateSolverExternal();
-                    }
+                    SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false);
+                    maleCharacters[charIndex].fullBodyIK.UpdateSolverExternal();
                 }
             }
-			
-            SliderUI.SaveBasePoints();
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "LateUpdate")]
+        public static void H_Lookat_dan_PostLateUpdate()
+        {
+            SliderUI.SaveBasePoints(useReplacements);
         }
 
         //-- Start of HScene --//
@@ -477,7 +499,7 @@ namespace HS2_BetterHScenes
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_PostChangeAnimation()
+        private static void HScene_PostChangeAnimation(HScene.AnimationListInfo _info)
         {
             if (hScene == null)
                 return;
@@ -503,6 +525,8 @@ namespace HS2_BetterHScenes
                 return;
 
             currentMotion = _strAnmName;
+
+            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
 
             if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
@@ -560,6 +584,9 @@ namespace HS2_BetterHScenes
                 return;
 
             femaleCharacters[0].setPlay(playAnimation, 0);
+            MotionIKDataBinder ikBinder = femaleCharacters[0].GetComponent<MotionIKDataBinder>();
+            if (ikBinder != null)
+                ikBinder.motionIK.Calc(playAnimation);
 
             if (hProcMode != (int)ProcMode.Peeping && hScene.RootmotionOffsetF != null && hScene.RootmotionOffsetF[0] != null)
                 hScene.RootmotionOffsetF[0].Set(playAnimation);
@@ -570,6 +597,9 @@ namespace HS2_BetterHScenes
                 {
                     femaleCharacters[1].animBody.Play(playAnimation, 0, 0f);
                     hScene.RootmotionOffsetF[1].Set(playAnimation);
+                    ikBinder = femaleCharacters[1].GetComponent<MotionIKDataBinder>();
+                    if (ikBinder != null)
+                        ikBinder.motionIK.Calc(playAnimation);
                 }
             }
 
@@ -578,7 +608,12 @@ namespace HS2_BetterHScenes
                 if (hProcMode == (int)ProcMode.Masturbation)
                 {
                     if (!hFlagCtrl.nowAnimationInfo.fileMale.IsNullOrEmpty() && maleCharacters[0].objBodyBone != null && maleCharacters[0].animBody.runtimeAnimatorController != null)
+                    {
                         maleCharacters[0].setPlay(playAnimation, 0);
+                        ikBinder = maleCharacters[0].GetComponent<MotionIKDataBinder>();
+                        if (ikBinder != null)
+                            ikBinder.motionIK.Calc(playAnimation);
+                    }
                 }
                 else if (hProcMode == (int)ProcMode.MultiPlay_F1M2)
                 {
@@ -588,6 +623,9 @@ namespace HS2_BetterHScenes
                         {
                             maleCharacters[i].setPlay(playAnimation, 0);
                             hScene.RootmotionOffsetM[i].Set(playAnimation);
+                            ikBinder = maleCharacters[i].GetComponent<MotionIKDataBinder>();
+                            if (ikBinder != null)
+                                ikBinder.motionIK.Calc(playAnimation);
                         }
                     }
                 }
@@ -597,18 +635,18 @@ namespace HS2_BetterHScenes
                     {
                         maleCharacters[0].setPlay(playAnimation, 0);
                         hScene.RootmotionOffsetM[0].Set(playAnimation);
+                        ikBinder = maleCharacters[0].GetComponent<MotionIKDataBinder>();
+                        if (ikBinder != null)
+                            ikBinder.motionIK.Calc(playAnimation);
                     }
                 }
             }
+
             if (ctrlItem != null)
-            {
                 ctrlItem.setPlay(playAnimation);
-            }
 
             if (ctrlYures != null && ctrlYures[0] != null)
-            {
                 ctrlYures[0].Proc(playAnimation);
-            }
 
             if (hProcMode == (int)ProcMode.Les && hProcMode == (int)ProcMode.MultiPlay_F2M1)
             {
@@ -619,6 +657,111 @@ namespace HS2_BetterHScenes
             if (hFlagCtrl.voice.changeTaii)
                 hFlagCtrl.voice.changeTaii = false;
 
+        }
+
+        public static void FixMotionList(string fileFemale)
+        {
+            SliderUI.ClearBaseReplacements();
+            bBaseReplacement = false;
+            bIdleGlowException = false;
+            bFootJobException = false;
+            bTwoFootException = false;
+            Console.WriteLine("ChangeAnimation " + fileFemale);
+            if (siriReplaceList.Contains(fileFemale))
+            {
+                Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_siriL_00")).FirstOrDefault();
+                Transform rightContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_siriR_00")).FirstOrDefault();
+
+                if (leftContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
+
+                if (rightContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
+
+                bBaseReplacement = true;
+            }
+            else if (kosiReplaceList.Contains(fileFemale))
+            {
+                Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi02_00")).FirstOrDefault();
+                Transform rightContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi02_01")).FirstOrDefault();
+
+                if (leftContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
+
+                if (rightContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
+
+                bBaseReplacement = true;
+            }
+            else if (huggingReplaceList.Contains(fileFemale))
+            {
+                Transform leftContact = maleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_spine03_00")).FirstOrDefault();
+                Transform rightContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_armlowL_00")).FirstOrDefault();
+
+                if (leftContact != null)
+                    SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.LeftHand, leftContact);
+
+                if (rightContact != null)
+                    SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.RightHand, rightContact);
+
+                bBaseReplacement = true;
+            }
+            else if (footReplaceList.Contains(fileFemale))
+            {
+                Transform leftAnkleReference = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("f_k_foot_L")).FirstOrDefault();
+                Transform leftDanReference = maleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_m_dansao00_00")).FirstOrDefault();
+
+                if (leftAnkleReference != null)
+                    SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.LeftFoot, leftAnkleReference);
+                if (leftDanReference != null)
+                    SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.LeftHand, leftDanReference);
+
+                bFootJobException = true;
+
+                if (fileFemale != footReplaceList[0])
+                {
+                    Transform rightAnkleReference = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("f_k_foot_R")).FirstOrDefault();
+                    Transform rightDanReference = maleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_m_dansao00_01")).FirstOrDefault();
+
+
+                    if (rightAnkleReference != null)
+                        SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.RightFoot, rightAnkleReference);
+                    if (rightDanReference != null)
+                        SliderUI.SetBaseReplacement(maleCharacters.Count, (int)BodyPart.RightHand, rightDanReference);
+
+                    bTwoFootException = true;
+                }
+
+            }
+            else if (rightKokanReplaceList.Contains(fileFemale))
+            {
+                Transform rightContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kokan_00")).FirstOrDefault();
+                if (rightContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
+
+                bBaseReplacement = true;
+                bIdleGlowException = true;
+            }
+            else if (leftKokanReplaceList.Contains(fileFemale))
+            {
+                Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kokan_00")).FirstOrDefault();
+                if (leftContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
+
+                bBaseReplacement = true;
+                bIdleGlowException = true;
+            }
+            else if (leftKosiReplaceList.Contains(fileFemale))
+            {
+                Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi02_00")).FirstOrDefault();
+                if (leftContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
+
+                bBaseReplacement = true;
+                bIdleGlowException = true;
+            }
+
+            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
         }
 
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)

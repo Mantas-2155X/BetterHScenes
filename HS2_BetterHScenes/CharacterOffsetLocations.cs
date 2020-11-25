@@ -52,6 +52,7 @@ namespace HS2_BetterHScenes
         public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransform };
         public Transform[] offsetTransforms = new Transform[offsetTransformNames.Length];
         public Transform[] hintTransforms = new Transform[hintTransformNames.Length];
+        public Transform[] baseReplaceTransforms = new Transform[offsetTransformNames.Length];
         public Illusion.Component.Correct.BaseData[] baseData = new Illusion.Component.Correct.BaseData[offsetTransformNames.Length];
         public OffsetVectors[] offsetVectors = new OffsetVectors[offsetTransformNames.Length];
         public Vector3[] lastBasePosition = new Vector3[offsetTransformNames.Length];
@@ -69,6 +70,7 @@ namespace HS2_BetterHScenes
             baseData = new Illusion.Component.Correct.BaseData[offsetTransformNames.Length];
             lastBasePosition = new Vector3[offsetTransformNames.Length];
             lastBaseRotation = new Vector3[offsetTransformNames.Length];
+            baseReplaceTransforms = new Transform[offsetTransformNames.Length];
 
             for (var offset = 0; offset < offsetVectors.Length; offset++)
                 offsetVectors[offset] = new OffsetVectors();
@@ -102,8 +104,8 @@ namespace HS2_BetterHScenes
 
                 if (baseData[offset].bone != null)
                 {
-                    lastBasePosition[offset] = new Vector3(baseData[offset].bone.position.x, baseData[offset].bone.position.y, baseData[offset].bone.position.z);
-                    lastBaseRotation[offset] = new Vector3(baseData[offset].bone.eulerAngles.x, baseData[offset].bone.eulerAngles.y, baseData[offset].bone.eulerAngles.z);
+                    lastBasePosition[offset] = baseData[offset].bone.position;
+                    lastBaseRotation[offset] = baseData[offset].bone.eulerAngles;
                 }
                 else
                 {
@@ -117,6 +119,8 @@ namespace HS2_BetterHScenes
 
         public void UpdateDependentStatus()
         {
+            dependentAnimation = false;
+
             if (!allLimbsFound || !HS2_BetterHScenes.solveFemaleDependenciesFirst.Value)
                 return;
 
@@ -128,11 +132,9 @@ namespace HS2_BetterHScenes
                     return;
                 }
             }
-
-            dependentAnimation = false;
         }
 
-        public void ApplyLimbOffsets(bool useLastSolverResult)
+        public void ApplyLimbOffsets(bool useLastSolverResult, bool useReplacementTransforms, bool bLeftFootJob, bool bRightFootJob)
         {
             if (!allLimbsFound)
                 return;
@@ -142,21 +144,31 @@ namespace HS2_BetterHScenes
                 if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null || baseData[offset] == null)
                     continue;
 
-                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
+                if (baseData[offset].bone != null)
                 {
                     if (useLastSolverResult)
                         offsetTransforms[offset].position = lastBasePosition[offset];
+                    else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                        offsetTransforms[offset].position = baseReplaceTransforms[offset].position;
                     else
                         offsetTransforms[offset].position = baseData[offset].bone.position;
                 }       
 
-                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
+                if (baseData[offset].bone != null)
                 {
                     if (useLastSolverResult)
                         offsetTransforms[offset].eulerAngles = lastBaseRotation[offset];
+                    else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                        offsetTransforms[offset].eulerAngles = baseReplaceTransforms[offset].eulerAngles;
                     else
                         offsetTransforms[offset].eulerAngles = baseData[offset].bone.eulerAngles;
                 }
+
+                if (bLeftFootJob && offset == (int)BodyPart.LeftFoot && baseReplaceTransforms[(int)BodyPart.LeftHand] != null && baseReplaceTransforms[offset] != null)
+                    offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.LeftHand].position - baseReplaceTransforms[offset].position;
+
+                if (bRightFootJob && offset == (int)BodyPart.RightFoot && baseReplaceTransforms[(int)BodyPart.RightHand] != null && baseReplaceTransforms[offset] != null)
+                    offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
 
                 if (offsetVectors[offset].position != new Vector3(0, 0, 0))
                    offsetTransforms[offset].localPosition += offsetVectors[offset].position;
@@ -169,14 +181,22 @@ namespace HS2_BetterHScenes
             }
         }
 
-        public void SaveBasePoints()
+        public void SaveBasePoints(bool useReplacementTransforms)
         {
             for (var offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {
                 if (baseData[offset].bone != null)
                 {
-                    lastBasePosition[offset] = new Vector3(baseData[offset].bone.position.x, baseData[offset].bone.position.y, baseData[offset].bone.position.z);
-                    lastBaseRotation[offset] = new Vector3(baseData[offset].bone.eulerAngles.x, baseData[offset].bone.eulerAngles.y, baseData[offset].bone.eulerAngles.z);
+                    if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                    {
+                        lastBasePosition[offset] = baseReplaceTransforms[offset].position;
+                        lastBaseRotation[offset] = baseReplaceTransforms[offset].eulerAngles;
+                    }
+                    else
+                    {
+                        lastBasePosition[offset] = baseData[offset].bone.position;
+                        lastBaseRotation[offset] = baseData[offset].bone.eulerAngles;
+                    }
                 }
                 else
                 {
@@ -184,6 +204,16 @@ namespace HS2_BetterHScenes
                     lastBaseRotation[offset] = new Vector3(0, 0, 0);
                 }
             }
+        }
+
+        public void SetBaseReplacement(int offset, Transform basePoint)
+        {
+            baseReplaceTransforms[offset] = basePoint;
+        }
+
+        public void ClearBaseReplacements()
+        {
+            baseReplaceTransforms = new Transform[offsetTransformNames.Length];
         }
     }
 }

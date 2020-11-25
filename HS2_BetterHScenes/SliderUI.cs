@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -14,7 +13,6 @@ namespace HS2_BetterHScenes
 
         public static int selectedCharacter = 0;
         public static int selectedOffset = 0;
-        public static int selectedMotion = 0;
 
         public static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
@@ -150,10 +148,10 @@ namespace HS2_BetterHScenes
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
         }
 
-        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob)
         {
             if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution);
+                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob);
         }
 
         public static void UpdateDependentStatus()
@@ -194,17 +192,6 @@ namespace HS2_BetterHScenes
                     GUILayout.Space((uiWidth / 5) - 10);
                     if (GUILayout.Button("Mirror Active Limb"))
                         MirrorActiveLimb();
-                    if (HS2_BetterHScenes.motionList != null && HS2_BetterHScenes.motionList.Count > 0)
-                    {
-                        if (GUILayout.Button("Apply Motion"))
-                        {
-                            if (selectedMotion > HS2_BetterHScenes.motionList.Count)
-                                selectedMotion = 0;
-
-                            Console.WriteLine("Apply Motion " + selectedMotion + ": " + HS2_BetterHScenes.motionList[selectedMotion].anim);
-                            HS2_BetterHScenes.SwitchAnimations(HS2_BetterHScenes.motionList[selectedMotion].anim);
-                        }
-                    }
                 }
 
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
@@ -370,15 +357,6 @@ namespace HS2_BetterHScenes
                     if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
                         SavePosition(true);
                 }
-
-                if (HS2_BetterHScenes.motionList != null && HS2_BetterHScenes.motionList.Count > 0)
-                {
-                    string[] motionNames = new string[HS2_BetterHScenes.motionList.Count];
-                    for (int motionIndex = 0; motionIndex < HS2_BetterHScenes.motionList.Count; motionIndex++)
-                        motionNames[motionIndex] = HS2_BetterHScenes.motionList[motionIndex].anim;
-
-                    selectedMotion = GUILayout.SelectionGrid(selectedMotion, motionNames, 6, gridStyle);
-                }
             }
 
             GUI.DragWindow();
@@ -417,10 +395,22 @@ namespace HS2_BetterHScenes
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.z = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z;
         }
 
-        public static void SaveBasePoints()
+        public static void SaveBasePoints(bool useReplacementTransforms)
         {
             for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
-                characterOffsets[charIndex].SaveBasePoints();
+                characterOffsets[charIndex].SaveBasePoints(useReplacementTransforms);
+        }
+
+        public static void SetBaseReplacement(int charIndex, int offset, Transform basePoint)
+        {
+            if (charIndex < characterOffsets.Count())
+                characterOffsets[charIndex].SetBaseReplacement(offset, basePoint);
+        }
+
+        public static void ClearBaseReplacements()
+        {
+            for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
+                characterOffsets[charIndex].ClearBaseReplacements();
         }
 
         public static void DrawDraggersUI() => window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));

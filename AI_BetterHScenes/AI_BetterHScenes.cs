@@ -364,7 +364,7 @@ namespace AI_BetterHScenes
             if (character == null)
                 return true;
 
-            if (character.loadNo == 0 && SliderUI.characterOffsets[character.loadNo].dependentAnimation)
+            if (character.loadNo == 0 && solveFemaleDependenciesFirst.Value && SliderUI.characterOffsets[character.loadNo].dependentAnimation)
                 return false;
 
             if (character.loadNo != 0)
@@ -397,6 +397,7 @@ namespace AI_BetterHScenes
                     }
                 }
             }
+			
             SliderUI.SaveBasePoints();
         }
 
@@ -658,6 +659,9 @@ namespace AI_BetterHScenes
 
             motionList = listTrav?.Field("lstEyeNeck").GetValue<List<HMotionEyeNeckMale.EyeNeck>>();
             hProcMode = hSceneTrav.Field("mode").GetValue<int>();
+
+            SliderUI.ClearBaseReplacements();
+
         }
 
         //-- Set apply offsets --//
@@ -728,60 +732,40 @@ namespace AI_BetterHScenes
         public static void SwitchAnimations(string playAnimation)
         {
             HItemCtrl ctrlItem = hSceneTrav?.Field("ctrlItem").GetValue<HItemCtrl>();
-            YureCtrl[] ctrlYures = hSceneTrav?.Field("ctrlYures").GetValue<YureCtrl[]>();
 
             if (femaleCharacters == null || femaleCharacters[0] == null)
                 return;
 
             femaleCharacters[0].setPlay(playAnimation, 0);
-
-     //       if (hProcMode != (int)ProcMode.Peeping && hScene.RootmotionOffsetF != null && hScene.RootmotionOffsetF[0] != null)
-       //         hScene.RootmotionOffsetF[0].Set(playAnimation);
+            MotionIK motionIK = femaleCharacters[0].GetComponent<MotionIK>();
+            if (motionIK != null)
+                motionIK.Calc(playAnimation);
 
             if (hProcMode == (int)ProcMode.MultiPlay_F2M1 || hProcMode == (int)ProcMode.Les)
             {
-                if (femaleCharacters[1] != null && femaleCharacters[1].visibleAll && femaleCharacters[1].objTop != null)
+                if (femaleCharacters[1].visibleAll && femaleCharacters[1].objTop != null)
                 {
-                    femaleCharacters[1].animBody.Play(playAnimation, 0, 0f);
-    //                hScene.RootmotionOffsetF[1].Set(playAnimation);
+                    femaleCharacters[1].setPlay(playAnimation, 0);
+                    motionIK = femaleCharacters[1].GetComponent<MotionIK>();
+                    if (motionIK != null)
+                        motionIK.Calc(playAnimation);
                 }
+
             }
 
-            if (maleCharacters != null && maleCharacters[0] != null)
+            if (hProcMode != (int)ProcMode.Masturbation && hProcMode != (int)ProcMode.Les)
             {
-                if (hProcMode == (int)ProcMode.Masturbation)
+                if (maleCharacters[0].objTop != null)
                 {
-                    if (!hFlagCtrl.nowAnimationInfo.fileMale.IsNullOrEmpty() && maleCharacters[0].objBodyBone != null && maleCharacters[0].animBody.runtimeAnimatorController != null)
-                        maleCharacters[0].setPlay(playAnimation, 0);
+                    maleCharacters[0].setPlay(playAnimation, 0);
+                    motionIK = maleCharacters[0].GetComponent<MotionIK>();
+                    if (motionIK != null)
+                        motionIK.Calc(playAnimation);
                 }
-                else if (hProcMode != (int)ProcMode.Peeping && hProcMode != (int)ProcMode.Les)
-                {
-                    if (maleCharacters[0].objTop != null && maleCharacters[0].visibleAll)
-                    {
-                        maleCharacters[0].setPlay(playAnimation, 0);
-     //                   hScene.RootmotionOffsetM[0].Set(playAnimation);
-                    }
-                }
-            }
-            if (ctrlItem != null)
-            {
-                ctrlItem.setPlay(playAnimation);
-            }
-/*
-            if (ctrlYures != null && ctrlYures[0] != null)
-            {
-                ctrlYures[0].Proc(playAnimation);
-            }
 
-            if (hProcMode == (int)ProcMode.Les && hProcMode == (int)ProcMode.MultiPlay_F2M1)
-            {
-                if (ctrlYures[1] != null && femaleCharacters[1].visibleAll && femaleCharacters[1].objTop != null)
-                    ctrlYures[1].Proc(playAnimation);
+                if (ctrlItem != null)
+                    ctrlItem.setPlay(playAnimation);
             }
-
-            if (hFlagCtrl.voice.changeTaii)
-                hFlagCtrl.voice.changeTaii = false;
-*/
         }
 
         private static void HScene_sceneLoaded(bool loaded)
