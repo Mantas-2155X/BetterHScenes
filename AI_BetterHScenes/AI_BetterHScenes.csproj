@@ -98,6 +98,7 @@
     <Compile Include="CharacterOffsetLocations.cs" />
     <Compile Include="SliderUI.cs" />
     <Compile Include="HSceneOffset.cs" />
+    <Compile Include="AnimationUI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Transpilers.cs" />

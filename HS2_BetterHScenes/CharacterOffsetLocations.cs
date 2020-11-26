@@ -121,7 +121,7 @@ namespace HS2_BetterHScenes
         {
             dependentAnimation = false;
 
-            if (!allLimbsFound || !HS2_BetterHScenes.solveFemaleDependenciesFirst.Value)
+            if (!allLimbsFound || !HS2_BetterHScenes.solveDependenciesFirst.Value)
                 return;
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
@@ -141,34 +141,37 @@ namespace HS2_BetterHScenes
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {
-                if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null || baseData[offset] == null)
-                    continue;
-
-                if (baseData[offset].bone != null)
+                if (HS2_BetterHScenes.enableAnimationFixer.Value)
                 {
-                    if (useLastSolverResult)
-                        offsetTransforms[offset].position = lastBasePosition[offset];
-                    else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
-                        offsetTransforms[offset].position = baseReplaceTransforms[offset].position;
-                    else
-                        offsetTransforms[offset].position = baseData[offset].bone.position;
-                }       
+                    if (offset == (int)BodyPart.WholeBody || offsetTransforms[offset] == null || baseData[offset] == null)
+                        continue;
 
-                if (baseData[offset].bone != null)
-                {
-                    if (useLastSolverResult)
-                        offsetTransforms[offset].eulerAngles = lastBaseRotation[offset];
-                    else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
-                        offsetTransforms[offset].eulerAngles = baseReplaceTransforms[offset].eulerAngles;
-                    else
-                        offsetTransforms[offset].eulerAngles = baseData[offset].bone.eulerAngles;
+                    if (baseData[offset].bone != null)
+                    {
+                        if (useLastSolverResult)
+                            offsetTransforms[offset].position = lastBasePosition[offset];
+                        else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                            offsetTransforms[offset].position = baseReplaceTransforms[offset].position;
+                        else
+                            offsetTransforms[offset].position = baseData[offset].bone.position;
+                    }
+
+                    if (baseData[offset].bone != null)
+                    {
+                        if (useLastSolverResult)
+                            offsetTransforms[offset].eulerAngles = lastBaseRotation[offset];
+                        else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                            offsetTransforms[offset].eulerAngles = baseReplaceTransforms[offset].eulerAngles;
+                        else
+                            offsetTransforms[offset].eulerAngles = baseData[offset].bone.eulerAngles;
+                    }
+
+                    if (bLeftFootJob && offset == (int)BodyPart.LeftFoot && baseReplaceTransforms[(int)BodyPart.LeftHand] != null && baseReplaceTransforms[offset] != null)
+                        offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.LeftHand].position - baseReplaceTransforms[offset].position;
+
+                    if (bRightFootJob && offset == (int)BodyPart.RightFoot && baseReplaceTransforms[(int)BodyPart.RightHand] != null && baseReplaceTransforms[offset] != null)
+                        offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
                 }
-
-                if (bLeftFootJob && offset == (int)BodyPart.LeftFoot && baseReplaceTransforms[(int)BodyPart.LeftHand] != null && baseReplaceTransforms[offset] != null)
-                    offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.LeftHand].position - baseReplaceTransforms[offset].position;
-
-                if (bRightFootJob && offset == (int)BodyPart.RightFoot && baseReplaceTransforms[(int)BodyPart.RightHand] != null && baseReplaceTransforms[offset] != null)
-                    offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
 
                 if (offsetVectors[offset].position != new Vector3(0, 0, 0))
                    offsetTransforms[offset].localPosition += offsetVectors[offset].position;
@@ -185,7 +188,7 @@ namespace HS2_BetterHScenes
         {
             for (var offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {
-                if (baseData[offset].bone != null)
+                if (baseData[offset] != null && baseData[offset].bone != null)
                 {
                     if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
                     {

@@ -149,10 +149,10 @@ namespace AI_BetterHScenes
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
         }
 
-        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob)
         {
             if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution);
+                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob);
         }
 
         public static void UpdateDependentStatus()
@@ -396,10 +396,10 @@ namespace AI_BetterHScenes
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.z = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z;
         }
 
-        public static void SaveBasePoints()
+        public static void SaveBasePoints(bool useReplacementTransforms)
         {
             for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
-                characterOffsets[charIndex].SaveBasePoints();
+                characterOffsets[charIndex].SaveBasePoints(useReplacementTransforms);
         }
 
         public static void SetBaseReplacement(int charIndex, int offset, Transform basePoint)

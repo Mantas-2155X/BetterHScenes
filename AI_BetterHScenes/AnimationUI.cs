@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 
 
-namespace HS2_BetterHScenes
+namespace AI_BetterHScenes
 {
     public static class AnimationUI
     {
@@ -33,15 +33,15 @@ namespace HS2_BetterHScenes
 
             using (GUILayout.VerticalScope guiVerticalScope = new GUILayout.VerticalScope("box"))
             {
-                if (HS2_BetterHScenes.maleMotionList != null && HS2_BetterHScenes.maleMotionList.Count > 0)
+                if (AI_BetterHScenes.maleMotionList != null && AI_BetterHScenes.maleMotionList.Count > 0)
                 {
                     List<string> motionNames = new List<string>();
-                    for (int motionIndex = 0; motionIndex < HS2_BetterHScenes.maleMotionList.Count; motionIndex++)
-                        motionNames.Add(HS2_BetterHScenes.maleMotionList[motionIndex].anim);
+                    for (int motionIndex = 0; motionIndex < AI_BetterHScenes.maleMotionList.Count; motionIndex++)
+                        motionNames.Add(AI_BetterHScenes.maleMotionList[motionIndex].anim);
 
-                    if (HS2_BetterHScenes.currentMotion != null && !motionNames.IsNullOrEmpty())
+                    if (AI_BetterHScenes.currentMotion != null && !motionNames.IsNullOrEmpty())
                     {
-                        currentMotion = motionNames.IndexOf(HS2_BetterHScenes.currentMotion);
+                        currentMotion = motionNames.IndexOf(AI_BetterHScenes.currentMotion);
 
                         if (currentMotion >= 0)
                         {
@@ -49,8 +49,8 @@ namespace HS2_BetterHScenes
 
                             if (selectedMotion != currentMotion)
                             {
-                                Console.WriteLine("Apply Motion " + selectedMotion + ": " + HS2_BetterHScenes.maleMotionList[selectedMotion].anim);
-                                HS2_BetterHScenes.SwitchAnimations(HS2_BetterHScenes.maleMotionList[selectedMotion].anim);
+                                Console.WriteLine("Apply Motion " + selectedMotion + ": " + AI_BetterHScenes.maleMotionList[selectedMotion].anim);
+                                AI_BetterHScenes.SwitchAnimations(AI_BetterHScenes.maleMotionList[selectedMotion].anim);
                                 currentMotion = selectedMotion;
                             }
                         }

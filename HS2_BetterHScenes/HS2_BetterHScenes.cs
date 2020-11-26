@@ -34,6 +34,14 @@ namespace HS2_BetterHScenes
             MultiPlay_F1M2
         }
 
+        private enum ChaID
+        {
+            FirstMale = 99,
+            SecondMale = 2,
+            FirstFemale = 0,
+            SecondFemale = 1
+        }
+
         public const string VERSION = "2.5.6";
 
         public new static ManualLogSource Logger;
@@ -52,9 +60,10 @@ namespace HS2_BetterHScenes
         public static List<ChaControl> characters;
         public static List<ChaControl> maleCharacters;
         public static List<ChaControl> femaleCharacters;
-        public static List<HMotionEyeNeckMale.EyeNeck> motionList = new List<HMotionEyeNeckMale.EyeNeck>();
+        public static List<HMotionEyeNeckMale.EyeNeck> maleMotionList = new List<HMotionEyeNeckMale.EyeNeck>();
 
-        private static bool activeUI;
+        private static bool activeDraggerUI;
+        private static bool activeAnimationUI;
         private static bool cameraShouldLock;
 
         public static AnimationOffsets animationOffsets;
@@ -68,24 +77,29 @@ namespace HS2_BetterHScenes
         public static bool bTwoFootException = false;
         public static bool useReplacements = false;
 
-        private static List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" }; 
-        private static List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
-        private static List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
-        private static List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
-        private static List<string> rightKokanReplaceList = new List<string>() { "aia_f_14" };
-        private static List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20", "aia_f_21" };
-        private static List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
+        private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" }; 
+        private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
+        private static readonly List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
+        private static readonly List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
+        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_14" };
+        private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20", "aia_f_21" };
+        private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
+        private static ConfigEntry<KeyboardShortcut> showAnimationUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
         public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
-        public static ConfigEntry<bool> solveFemaleDependenciesFirst { get; private set; }
-        public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
-        public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<string> offsetFile { get; private set; }
         public static ConfigEntry<float> sliderMaxPosition { get; private set; }
         public static ConfigEntry<float> sliderMaxRotation { get; private set; }
+
+        //-- Animations --//
+        public static ConfigEntry<bool> enableAnimationFixer { get; private set; }
+        public static ConfigEntry<bool> solveDependenciesFirst { get; private set; }
+        public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
+        public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
+        public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -129,17 +143,31 @@ namespace HS2_BetterHScenes
         {
             Logger = base.Logger;
 
-            showDraggerUI = Config.Bind("QoL > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.N));
-            (applySavedOffsets = Config.Bind("QoL > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
+            showDraggerUI = Config.Bind("Animations > Draggers", "Show draggers UI", new KeyboardShortcut(KeyCode.N));
+            showAnimationUI = Config.Bind("Animations > Draggers", "Show animation UI", new KeyboardShortcut(KeyCode.N, KeyCode.LeftControl), new ConfigDescription("Displays a UI that can be used to change the current animation motion.  Intended to be used with draggers UI to make adjustments.  May break the flow of an HScene so use with caution."));
+            (applySavedOffsets = Config.Bind("Animations > Draggers", "Apply saved offsets", true, new ConfigDescription("Apply previously saved character offsets for character pair / position during H"))).SettingChanged += delegate
             {
                 if (applySavedOffsets.Value)
                     shouldApplyOffsets = true;
             };
+            useOneOffsetForAllMotions = Config.Bind("Animations > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
+            offsetFile = Config.Bind("Animations > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
+            sliderMaxPosition = Config.Bind("Animations > Draggers", "Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the position slider bars."));
+            sliderMaxRotation = Config.Bind("Animations > Draggers", "Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the rotation slider bars."));
 
-            useOneOffsetForAllMotions = Config.Bind("QoL > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
-            offsetFile = Config.Bind("QoL > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
-            sliderMaxPosition = Config.Bind("QoL > Draggers", "Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the position slider bars."));
-            sliderMaxRotation = Config.Bind("QoL > Draggers", "Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the rotation slider bars."));
+            (solveDependenciesFirst = Config.Bind("Animations > Solver", "Solve Independent Animations First", true, new ConfigDescription("Re-orders animation solving.  If the male animation is dependent on the female animation, the female animation will be solved first.  Some animations have both male and female dependencies.  These ones will run females first, so female dependencies will be broken.  This can be fixed by using last frame (see below)"))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    SliderUI.UpdateDependentStatus();
+            };
+            useLastSolutionForFemales = Config.Bind("Animations > Solver", "Use Last Frame Solutions for Females", true, new ConfigDescription("Use Last Frame's result as input to next frame.  This can fix problems when the female animations are solved before the male animations but are dependent on the male animations.  It will add a framerate dependent amount of jitter to the animations, which can be a good thing if your fps is high, or a bad thing if your fps is low."));
+            useLastSolutionForMales = Config.Bind("Animations > Solver", "Use Last Frame Solutions for Males", false, new ConfigDescription("Use Last Frame's result as input to next frame.  This can fix problems when the male animations are solved before the female animatiosn but are dependent on the male animations.  It will add a framerate dependent amount of jitter to the animations, which can be a good thing if your fps is high, or a bad thing if your fps is low."));
+            enableAnimationFixer = Config.Bind("Animations > Solver", "Enable Animation Fixer", true, new ConfigDescription("Corrects most animations by using the other characters solutions if available. No other solver options will work without this enabled."));
+            (fixAttachmentPoints = Config.Bind("Animations > Solver", "Fix broken Animation Tables", true, new ConfigDescription("Corrects certain animations by attaching certain IK points to the correct location instead of leaving them dangling in air."))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+            };
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
 
@@ -173,13 +201,7 @@ namespace HS2_BetterHScenes
             autoServicePrefer = Config.Bind("QoL > Cum", "Preferred auto service finish", Tools.AutoServicePrefer.Drink, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
             autoInsertPrefer = Config.Bind("QoL > Cum", "Preferred auto insert finish", Tools.AutoInsertPrefer.Same, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
 
-            (solveFemaleDependenciesFirst = Config.Bind("QoL > Animation", "Solve Female Animations First", true, new ConfigDescription("Re-orders animation solving.  If the male animation is dependent on the female animation, the female animation will be run first.  Some animations have both male and female dependencies.  These ones will run females first, so female dependencies will be broken.  This can be fixed by using last frame (see below)"))).SettingChanged += delegate
-            {
-                SliderUI.UpdateDependentStatus();
-            };
-            useLastSolutionForFemales = Config.Bind("QoL > Animation", "Use Last Frame Solutions for Females", true, new ConfigDescription("Use Last Frame's result as input to next frame.  This can fix problems when the female animations are solved before the male animations but are dependent on the male animations.  It will add a framerate dependent amount of jitter to the animations, which can be a good thing if your fps is high, or a bad thing if your fps is low."));
-            useLastSolutionForMales = Config.Bind("QoL > Animation", "Use Last Frame Solutions for Males", false, new ConfigDescription("Use Last Frame's result as input to next frame.  This can fix problems when the male animations are solved before the female animatiosn but are dependent on the male animations.  It will add a framerate dependent amount of jitter to the animations, which can be a good thing if your fps is high, or a bad thing if your fps is low."));
-            (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
+           (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
             {
                 if (cameraCtrl == null)
                     return;
@@ -200,11 +222,11 @@ namespace HS2_BetterHScenes
         //-- Draw chara draggers UI --//
         private void OnGUI()
         {
-            if (activeUI && hScene != null)
-            {
+            if (activeDraggerUI && hScene != null)
                 SliderUI.DrawDraggersUI();
+                
+            if (activeAnimationUI && hScene != null)
                 AnimationUI.DrawAnimationUI();
-            }
         }
 
         //-- Apply chara offsets --//
@@ -215,7 +237,10 @@ namespace HS2_BetterHScenes
                 return;
 
             if (showDraggerUI.Value.IsDown())
-                activeUI = !activeUI;
+                activeDraggerUI = !activeDraggerUI;
+
+            if (showAnimationUI.Value.IsDown())
+                activeAnimationUI = !activeAnimationUI;
 
             if (shouldApplyOffsets && !hScene.NowChangeAnim)
             {
@@ -311,16 +336,15 @@ namespace HS2_BetterHScenes
                 return true;
 
             int charIndex = 1;
-
-            if (character.chaID == 0 || character.chaID == 1)
+            if (character.chaID == (int)ChaID.FirstFemale || character.chaID == (int)ChaID.SecondFemale)
                 charIndex = maleCharacters.Count + character.chaID;
-            else if (character.chaID == 99)
+            else if (character.chaID == (int)ChaID.FirstMale)
                 charIndex = 0;
 
-            if (character.chaID != 0 && character.chaID != 1 && solveFemaleDependenciesFirst.Value && SliderUI.characterOffsets[charIndex].dependentAnimation)
+            if (enableAnimationFixer.Value && solveDependenciesFirst.Value && character.chaID != (int)ChaID.FirstFemale && character.chaID != (int)ChaID.SecondFemale && SliderUI.characterOffsets[charIndex].dependentAnimation)
                 return false;
 
-            if (character.chaID == 0 || character.chaID == 1)
+            if (character.chaID == (int)ChaID.FirstFemale || character.chaID == (int)ChaID.SecondFemale)
             {
                 bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
                 bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
@@ -336,12 +360,11 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
         public static void SolverManager_PostLateUpdate(RootMotion.SolverManager __instance)
         {
-            if (hScene == null)
+            if (hScene == null || !enableAnimationFixer.Value || !solveDependenciesFirst.Value)
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
-
-            if (character.chaID != 0 || !solveFemaleDependenciesFirst.Value)
+            if (character.chaID != (int)ChaID.FirstFemale)
                 return;
 
             for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
@@ -357,7 +380,8 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(H_Lookat_dan), "LateUpdate")]
         public static void H_Lookat_dan_PostLateUpdate()
         {
-            SliderUI.SaveBasePoints(useReplacements);
+            if (hScene != null)
+                SliderUI.SaveBasePoints(useReplacements);
         }
 
         //-- Start of HScene --//
@@ -382,7 +406,7 @@ namespace HS2_BetterHScenes
             Tools.hFlagCtrlTrav = Traverse.Create(hFlagCtrl);
 
             listTrav = Traverse.Create(hScene.ctrlEyeNeckMale[0]);
-            motionList = listTrav?.Field("lstEyeNeck").GetValue<List<HMotionEyeNeckMale.EyeNeck>>();
+            maleMotionList = listTrav?.Field("lstEyeNeck").GetValue<List<HMotionEyeNeckMale.EyeNeck>>();
 
             if (unlockCamera.Value)
             {
@@ -415,7 +439,8 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
-            activeUI = false;
+            activeDraggerUI = false;
+            activeAnimationUI = false;
 
             if (characters != null)
             {
@@ -458,7 +483,7 @@ namespace HS2_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(CameraControl_Ver2), "LateUpdate")]
         public static bool CameraControlVer2_LateUpdate_DisableCameraControl(CameraControl_Ver2 __instance)
         {
-            if (!cameraShouldLock || !activeUI)
+            if (!cameraShouldLock || !activeDraggerUI)
                 return true;
 
             Traverse.Create(__instance).Property("isControlNow").SetValue(false);
@@ -499,12 +524,12 @@ namespace HS2_BetterHScenes
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
-        private static void HScene_PostChangeAnimation(HScene.AnimationListInfo _info)
+        private static void HScene_PostChangeAnimation()
         {
             if (hScene == null)
                 return;
 
-            motionList = listTrav?.Field("lstEyeNeck").GetValue<List<HMotionEyeNeckMale.EyeNeck>>();
+            maleMotionList = listTrav?.Field("lstEyeNeck").GetValue<List<HMotionEyeNeckMale.EyeNeck>>();
             hProcMode = hSceneTrav.Field("mode").GetValue<int>();
         }
 
@@ -519,14 +544,16 @@ namespace HS2_BetterHScenes
         //-- Save current motion --//
         //-- Set apply offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
-        private static void ChaControl_PostSetPlay(ChaControl __instance, string _strAnmName, int _nLayer)
+        private static void ChaControl_PostSetPlay(ChaControl __instance, string _strAnmName)
         {
-            if (useOneOffsetForAllMotions.Value || __instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
+            if (__instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
                 return;
 
             currentMotion = _strAnmName;
-
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+
+            if (useOneOffsetForAllMotions.Value)
+                return;
 
             if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
@@ -666,7 +693,10 @@ namespace HS2_BetterHScenes
             bIdleGlowException = false;
             bFootJobException = false;
             bTwoFootException = false;
-            Console.WriteLine("ChangeAnimation " + fileFemale);
+
+            if (!fixAttachmentPoints.Value)
+                return;
+
             if (siriReplaceList.Contains(fileFemale))
             {
                 Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_siriL_00")).FirstOrDefault();
