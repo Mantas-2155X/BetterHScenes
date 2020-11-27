@@ -117,19 +117,24 @@ namespace HS2_BetterHScenes
             allLimbsFound = true;
         }
 
-        public void UpdateDependentStatus()
+        public void UpdateDependentStatus(ChaControl character)
         {
             dependentAnimation = false;
 
-            if (!allLimbsFound || !HS2_BetterHScenes.solveDependenciesFirst.Value)
+            if (!allLimbsFound || !HS2_BetterHScenes.solveDependenciesFirst.Value || character == null)
                 return;
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {
                 if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
                 {
-                    dependentAnimation = true;
-                    return;
+                    ChaControl targetCharacter = baseData[offset].bone.GetComponentInParent<ChaControl>();
+
+                    if (targetCharacter != null && character.chaID != targetCharacter.chaID)
+                    {
+                        dependentAnimation = true;
+                        return;
+                    }
                 }
             }
         }

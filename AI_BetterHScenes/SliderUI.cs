@@ -157,8 +157,8 @@ namespace AI_BetterHScenes
 
         public static void UpdateDependentStatus()
         {
-            for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
-                characterOffsets[charIndex].UpdateDependentStatus();
+            for (var charIndex = 0; charIndex < characterOffsets.Length && charIndex < AI_BetterHScenes.characters.Count; charIndex++)
+                characterOffsets[charIndex].UpdateDependentStatus(AI_BetterHScenes.characters[charIndex]);
         }
 
         private static void DrawWindow(int id)
