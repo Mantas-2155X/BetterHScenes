@@ -37,14 +37,6 @@ namespace AI_BetterHScenes
             MultiPlay_F2M1
         }
 
-        private enum ChaID
-        {
-            FirstMale = 99,
-            SecondMale = 2,
-            FirstFemale = 0,
-            SecondFemale = 1
-        }
-
         public const string VERSION = "2.5.6";
 
         public new static ManualLogSource Logger;
@@ -406,25 +398,21 @@ namespace AI_BetterHScenes
             if (character == null)
                 return true;
 
-            int charIndex = 1;
-            if (character.chaID == (int)ChaID.FirstFemale || character.chaID == (int)ChaID.SecondFemale)
-                charIndex = maleCharacters.Count + character.chaID;
-            else if (character.chaID == (int)ChaID.FirstMale)
-                charIndex = 0;
 
-            if (enableAnimationFixer.Value && solveDependenciesFirst.Value && character.chaID != (int)ChaID.FirstFemale && character.chaID != (int)ChaID.SecondFemale && SliderUI.characterOffsets[charIndex].dependentAnimation)
+            if (enableAnimationFixer.Value && solveDependenciesFirst.Value && character.loadNo == 0  && SliderUI.characterOffsets[character.loadNo].dependentAnimation)
                 return false;
 
-            if (character.chaID == (int)ChaID.FirstFemale || character.chaID == (int)ChaID.SecondFemale)
+            if (character.loadNo != 0)
             {
                 bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
                 bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
+                SliderUI.ApplyLimbOffsets(character.loadNo, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
             }
             else
             {
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false);
+                SliderUI.ApplyLimbOffsets(character.loadNo, useLastSolutionForMales.Value, useReplacements, false, false);
             }
+
             return true;
         }
 
@@ -435,7 +423,7 @@ namespace AI_BetterHScenes
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
-            if (character.chaID != (int)ChaID.FirstFemale)
+            if (character.loadNo != 1)
                 return;
 
             for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
