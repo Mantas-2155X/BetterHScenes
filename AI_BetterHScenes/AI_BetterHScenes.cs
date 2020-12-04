@@ -398,19 +398,26 @@ namespace AI_BetterHScenes
             if (character == null)
                 return true;
 
+            int characterIndex = 0;
+            if (!character.isPlayer)
+            {
+                characterIndex = 1;
+                if (femaleCharacters.Count > 1 && character.loadNo == femaleCharacters[1].loadNo)
+                    characterIndex = 2;
+            }
 
-            if (enableAnimationFixer.Value && solveDependenciesFirst.Value && character.loadNo == 0  && SliderUI.characterOffsets[character.loadNo].dependentAnimation)
+            if (enableAnimationFixer.Value && solveDependenciesFirst.Value && character.isPlayer && SliderUI.characterOffsets[characterIndex].dependentAnimation)
                 return false;
 
-            if (character.loadNo != 0)
+            if (!character.isPlayer)
             {
                 bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
                 bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
-                SliderUI.ApplyLimbOffsets(character.loadNo, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
+                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
             }
             else
             {
-                SliderUI.ApplyLimbOffsets(character.loadNo, useLastSolutionForMales.Value, useReplacements, false, false);
+                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForMales.Value, useReplacements, false, false);
             }
 
             return true;
@@ -423,7 +430,7 @@ namespace AI_BetterHScenes
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
-            if (character.loadNo != 1)
+            if (character.isPlayer || (femaleCharacters.Count > 1 && character.loadNo == femaleCharacters[1].loadNo))
                 return;
 
             for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
@@ -888,7 +895,6 @@ namespace AI_BetterHScenes
 
                     bTwoFootException = true;
                 }
-
             }
             else if (rightKokanReplaceList.Contains(fileFemale))
             {
