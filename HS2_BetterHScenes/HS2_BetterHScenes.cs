@@ -364,7 +364,7 @@ namespace HS2_BetterHScenes
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
-            if (character.chaID != (int)ChaID.FirstFemale)
+            if (character == null || character.chaID != (int)ChaID.FirstFemale)
                 return;
 
             for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
@@ -610,7 +610,7 @@ namespace HS2_BetterHScenes
             if (femaleCharacters == null || femaleCharacters[0] == null)
                 return;
 
-            femaleCharacters[0].setPlay(playAnimation, 0);
+                femaleCharacters[0].setPlay(playAnimation, 0);
             MotionIKDataBinder ikBinder = femaleCharacters[0].GetComponent<MotionIKDataBinder>();
             if (ikBinder != null)
                 ikBinder.motionIK.Calc(playAnimation);

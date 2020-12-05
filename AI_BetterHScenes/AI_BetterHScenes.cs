@@ -430,7 +430,7 @@ namespace AI_BetterHScenes
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
-            if (character.isPlayer || (femaleCharacters.Count > 1 && character.loadNo == femaleCharacters[1].loadNo))
+            if (character == null || character.isPlayer || (femaleCharacters.Count > 1 && femaleCharacters[1] != null && femaleCharacters[1].loadNo == character.loadNo))
                 return;
 
             for (var charIndex = 0; charIndex < maleCharacters.Count; charIndex++)
