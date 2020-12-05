@@ -390,7 +390,7 @@ namespace AI_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
         public static bool SolverManager_PreLateUpdate(RootMotion.SolverManager __instance)
         {
-            if (hScene == null)
+            if (hScene == null || __instance == null)
                 return true;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
@@ -402,7 +402,7 @@ namespace AI_BetterHScenes
             if (!character.isPlayer)
             {
                 characterIndex = 1;
-                if (femaleCharacters.Count > 1 && character.loadNo == femaleCharacters[1].loadNo)
+                if (femaleCharacters.Count > 1 && femaleCharacters[1] != null && character.loadNo == femaleCharacters[1].loadNo)
                     characterIndex = 2;
             }
 
