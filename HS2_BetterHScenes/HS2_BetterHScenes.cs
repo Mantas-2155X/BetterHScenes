@@ -136,8 +136,12 @@ namespace HS2_BetterHScenes
         private static ConfigEntry<Tools.AutoServicePrefer> autoServicePrefer { get; set; }
         private static ConfigEntry<Tools.AutoInsertPrefer> autoInsertPrefer { get; set; }
 
+        private static ConfigEntry<Obi.ObiSolver.UpdateMode> obiUpdateMode { get; set; }
+
         //-- General --//
         private static ConfigEntry<bool> unlockCamera { get; set; }
+
+        private static Obi.ObiSolver obiSolver = new Obi.ObiSolver();
 
         private void Awake()
         {
@@ -201,7 +205,15 @@ namespace HS2_BetterHScenes
             autoServicePrefer = Config.Bind("QoL > Cum", "Preferred auto service finish", Tools.AutoServicePrefer.Drink, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
             autoInsertPrefer = Config.Bind("QoL > Cum", "Preferred auto insert finish", Tools.AutoInsertPrefer.Same, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
 
-           (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
+            (obiUpdateMode = Config.Bind("QoL", "Detailed Cum Update Mode", Obi.ObiSolver.UpdateMode.FixedUpdate, new ConfigDescription("Update method for detailed cum, use LateUpdate for best framerate"))).SettingChanged += (s, e) =>
+            {
+                if (obiSolver == null)
+                    return;
+
+                obiSolver.UpdateOrder = obiUpdateMode.Value;
+            };
+
+            (unlockCamera = Config.Bind("QoL > General", "Unlock camera movement", true, new ConfigDescription("Unlock camera zoom out / distance limit during H"))).SettingChanged += (s, e) =>
             {
                 if (cameraCtrl == null)
                     return;
@@ -219,8 +231,8 @@ namespace HS2_BetterHScenes
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-        //-- Draw chara draggers UI --//
-        private void OnGUI()
+    //-- Draw chara draggers UI --//
+    private void OnGUI()
         {
             if (activeDraggerUI && hScene != null)
                 SliderUI.DrawDraggersUI();
@@ -430,6 +442,10 @@ namespace HS2_BetterHScenes
             if (characters == null)
                 return;
 
+            obiSolver = GameObject.Find("SiruObiMgr").GetComponentInChildren<Obi.ObiSolver>(true);
+ 
+            if (obiSolver != null)
+                obiSolver.UpdateOrder = obiUpdateMode.Value;
 
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
             SliderUI.InitDraggersUI();
