@@ -205,7 +205,7 @@ namespace HS2_BetterHScenes
             autoServicePrefer = Config.Bind("QoL > Cum", "Preferred auto service finish", Tools.AutoServicePrefer.Drink, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
             autoInsertPrefer = Config.Bind("QoL > Cum", "Preferred auto insert finish", Tools.AutoInsertPrefer.Same, new ConfigDescription("Preferred auto finish type. Will fall back to any available option if selected is not available"));
 
-            (obiUpdateMode = Config.Bind("QoL", "Detailed Cum Update Mode", Obi.ObiSolver.UpdateMode.FixedUpdate, new ConfigDescription("Update method for detailed cum, use LateUpdate for best framerate"))).SettingChanged += (s, e) =>
+            (obiUpdateMode = Config.Bind("QoL > Cum", "Detailed Cum Update Mode", Obi.ObiSolver.UpdateMode.FixedUpdate, new ConfigDescription("Update method for detailed cum, use LateUpdate for best framerate"))).SettingChanged += (s, e) =>
             {
                 if (obiSolver == null)
                     return;
