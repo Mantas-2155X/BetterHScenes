@@ -7,7 +7,7 @@ This plugin fixes HScene performance bugs and adds extra features
 * [AI] Disable map during H (~10-15 FPS boost)  
 * [AI] Disable sun shadows during H (~8-13 FPS boost)  
 * [AI] Optimize SkinnedCollisionHelpers (~15-25 FPS boost during Service and Insert)  
-* Optimize Obi solver 
+* [HS2] Optimize Obi solver 
 * Add tears to female character after reaching weakness during H  
 * Toggle ON/OFF H Camera maximum position and zoom maximum limits  
 * Prevent default clothes strip when changing animation  
