@@ -87,8 +87,8 @@ namespace AI_BetterHScenes
         private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
         private static readonly List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
         private static readonly List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
-        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_14" };
-        private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20", "aia_f_21" };
+        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_09", "aia_f_14", "aia_f_21" };
+        private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
 
         //-- Draggers --//
