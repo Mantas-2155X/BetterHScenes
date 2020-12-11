@@ -268,10 +268,10 @@ namespace HS2_BetterHScenes
             if (hFlagCtrl.feel_m >= 0.98f && Tools.IsService() && autoFinish.Value != Tools.AutoFinish.InsertOnly)
             {
                 // same mode as OnBody only for some reason
-                var drink = hSprite.IsFinishVisible(1) && Tools.modeCtrl != 0;
+                var drink = hSprite.IsFinishVisible(1) && Tools.modeCtrl != 0 && !(!hSprite.IsFinishVisible(4) && hSprite.IsFinishVisible(1) && Tools.modeCtrl == 1);
                 var vomit = hSprite.IsFinishVisible(3);
                 // same mode as drink for some reason
-                var onbody = hSprite.IsFinishVisible(4) || (hSprite.IsFinishVisible(1) && Tools.modeCtrl == 0);
+                var onbody = hSprite.IsFinishVisible(4) || (hSprite.IsFinishVisible(1) && (Tools.modeCtrl == 0 || Tools.modeCtrl == 1));
 
                 switch (autoServicePrefer.Value)
                 {

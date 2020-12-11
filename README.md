@@ -7,6 +7,7 @@ This plugin fixes HScene performance bugs and adds extra features
 * [AI] Disable map during H (~10-15 FPS boost)  
 * [AI] Disable sun shadows during H (~8-13 FPS boost)  
 * [AI] Optimize SkinnedCollisionHelpers (~15-25 FPS boost during Service and Insert)  
+* [HS2] Optimize Obi solver 
 * Add tears to female character after reaching weakness during H  
 * Toggle ON/OFF H Camera maximum position and zoom maximum limits  
 * Prevent default clothes strip when changing animation  
@@ -14,12 +15,13 @@ This plugin fixes HScene performance bugs and adds extra features
 * [AI] Change H Point search range  
 * [AI] Keep H buttons interactive during orgasm **(See notes #2)**  
 * [AI] Retain cum after H (can be cleaned by bathing / changing clothes)  
-* Character dragger UI with ability to save offsets for different characters, animations, motions  
+* Character dragger UI with ability to move characters hand and feet, save offsets for different characters, animations, motions  
 * Close eyes, turn off blinking weakness/all the time during H    
 * [AI] Clean or keep cum on Merchant after H (if retain is enabled)  
 * Always heart gauge  
 * Count till weakness modifier  
 * Autofinish with options like inside/outside/together/random  
+* Fixed some of the game animations to align better
 
 **Download:**  
 * Download the latest `GAME_BetterHScenes.zip` from https://github.com/Mantas-2155X/BetterHScenes/releases  
