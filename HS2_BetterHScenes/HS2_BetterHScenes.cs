@@ -430,15 +430,21 @@ namespace HS2_BetterHScenes
 
             characters = new List<ChaControl>();
             maleCharacters = new List<ChaControl>();
-            maleCharacters.AddRange(__instance.GetMales());
-            foreach (var chara in maleCharacters.Where(chara => chara != null))
-                characters.Add(chara);
+            ChaControl[] males = __instance.GetMales();
+            foreach (var male in males.Where(male => male != null))
+            {
+                maleCharacters.Add(male);
+                characters.Add(male);
+            }
 
             femaleCharacters = new List<ChaControl>();
-            femaleCharacters.AddRange(__instance.GetFemales());
-            foreach (var chara in femaleCharacters.Where(chara => chara != null))
-                characters.Add(chara);
-
+            ChaControl[] females = __instance.GetFemales();
+            foreach (var female in females.Where(female => female != null))
+            {
+                femaleCharacters.Add(female);
+                characters.Add(female);
+            }
+            
             if (characters == null)
                 return;
 
@@ -710,7 +716,7 @@ namespace HS2_BetterHScenes
             bFootJobException = false;
             bTwoFootException = false;
 
-            if (!fixAttachmentPoints.Value)
+            if (!fixAttachmentPoints.Value || maleCharacters == null || maleCharacters[0] == null || femaleCharacters == null || femaleCharacters[0] == null)
                 return;
 
             if (siriReplaceList.Contains(fileFemale))
