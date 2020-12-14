@@ -42,6 +42,14 @@ namespace HS2_BetterHScenes
             SecondFemale = 1
         }
 
+        private enum Effector
+        {
+            LeftHand = 5,
+            RightHand = 6,
+            LeftFoot = 7,
+            RightFoot = 8
+        }
+
         public const string VERSION = "2.5.6";
 
         public new static ManualLogSource Logger;
@@ -100,6 +108,7 @@ namespace HS2_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
+        public static ConfigEntry<bool> fixEffectors { get; private set; }   
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -171,6 +180,12 @@ namespace HS2_BetterHScenes
             {
                 if (hScene != null)
                     FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+            };
+
+            (fixEffectors = Config.Bind("Animations > Solver", "Fix broken Effectors", false, new ConfigDescription("Allows limb movement on certain positions by fixing their effector weights."))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    FixEffectors();
             };
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
@@ -259,6 +274,7 @@ namespace HS2_BetterHScenes
                 HSceneOffset.ApplyCharacterOffsets();
                 SliderUI.UpdateDependentStatus();
                 FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+                FixEffectors();
                 shouldApplyOffsets = false;
             }
 
@@ -814,6 +830,26 @@ namespace HS2_BetterHScenes
             }
 
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+        }
+
+        public static void FixEffectors()
+        {
+            if (!fixEffectors.Value)
+                return;
+
+            foreach (var character in characters)
+            {
+                RootMotion.FinalIK.IKEffector[] effectorList = character.fullBodyIK.solver.effectors;
+
+                if (effectorList == null)
+                    continue;
+
+                for (Effector effector = Effector.LeftHand; effector <= Effector.RightFoot && (int)effector < effectorList.Length; effector++)
+                {
+                    effectorList[(int)effector].positionWeight = 1;
+                    effectorList[(int)effector].rotationWeight = 1;
+                }
+            }
         }
 
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)

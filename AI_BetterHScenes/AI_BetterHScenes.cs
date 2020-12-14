@@ -36,6 +36,13 @@ namespace AI_BetterHScenes
             Les,
             MultiPlay_F2M1
         }
+        private enum Effector
+        {
+            LeftHand = 5,
+            RightHand = 6,
+            LeftFoot = 7,
+            RightFoot = 8
+        }
 
         public const string VERSION = "2.5.6";
 
@@ -106,6 +113,7 @@ namespace AI_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
+        public static ConfigEntry<bool> fixEffectors { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -184,6 +192,12 @@ namespace AI_BetterHScenes
             {
                 if (hScene != null)
                     FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+            };
+
+            (fixEffectors = Config.Bind("Animations > Solver", "Fix broken Effectors", false, new ConfigDescription("Allows limb movement on certain positions by fixing their effector weights."))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    FixEffectors();
             };
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
@@ -931,6 +945,26 @@ namespace AI_BetterHScenes
             }
 
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+        }
+
+        public static void FixEffectors()
+        {
+            if (!fixEffectors.Value)
+                return;
+
+            foreach (var character in characters)
+            {
+                RootMotion.FinalIK.IKEffector[] effectorList = character.fullBodyIK.solver.effectors;
+
+                if (effectorList == null)
+                    continue;
+
+                for (Effector effector = Effector.LeftHand; effector <= Effector.RightFoot && (int)effector < effectorList.Length; effector++)
+                {
+                    effectorList[(int)effector].positionWeight = 1;
+                    effectorList[(int)effector].rotationWeight = 1;
+                }
+            }
         }
 
         private static void HScene_sceneLoaded(bool loaded)
