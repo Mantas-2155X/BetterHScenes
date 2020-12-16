@@ -36,6 +36,13 @@ namespace AI_BetterHScenes
             Les,
             MultiPlay_F2M1
         }
+        private enum Effector
+        {
+            LeftHand = 5,
+            RightHand = 6,
+            LeftFoot = 7,
+            RightFoot = 8
+        }
 
         public const string VERSION = "2.5.6";
 
@@ -87,8 +94,8 @@ namespace AI_BetterHScenes
         private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
         private static readonly List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
         private static readonly List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
-        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_14" };
-        private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20", "aia_f_21" };
+        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_09", "aia_f_14", "aia_f_21" };
+        private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
 
         //-- Draggers --//
@@ -106,6 +113,7 @@ namespace AI_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
+        public static ConfigEntry<bool> fixEffectors { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -184,6 +192,12 @@ namespace AI_BetterHScenes
             {
                 if (hScene != null)
                     FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+            };
+
+            (fixEffectors = Config.Bind("Animations > Solver", "Fix broken Effectors", false, new ConfigDescription("Allows limb movement on certain positions by fixing their effector weights."))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    FixEffectors();
             };
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
@@ -491,17 +505,23 @@ namespace AI_BetterHScenes
             cameraShouldLock = true;
             sun = sunObj.GetComponent<Light>();
 
-            characters = new List<ChaControl>();
             collisionHelpers = new List<SkinnedCollisionHelper>();
+            characters = new List<ChaControl>();
             maleCharacters = new List<ChaControl>();
-            maleCharacters.AddRange(__instance.GetMales());
-            foreach (var chara in maleCharacters.Where(chara => chara != null))
-                characters.Add(chara);
+            ChaControl[] males = __instance.GetMales();
+            foreach (var male in males.Where(male => male != null))
+            {
+                maleCharacters.Add(male);
+                characters.Add(male);
+            }
 
             femaleCharacters = new List<ChaControl>();
-            femaleCharacters.AddRange(__instance.GetFemales());
-            foreach (var chara in femaleCharacters.Where(chara => chara != null))
-                characters.Add(chara);
+            ChaControl[] females = __instance.GetFemales();
+            foreach (var female in females.Where(female => female != null))
+            {
+                femaleCharacters.Add(female);
+                characters.Add(female);
+            }
 
             if (characters == null)
                 return;
@@ -828,7 +848,7 @@ namespace AI_BetterHScenes
             bFootJobException = false;
             bTwoFootException = false;
 
-            if (!fixAttachmentPoints.Value)
+            if (!fixAttachmentPoints.Value || maleCharacters == null || maleCharacters[0] == null || femaleCharacters == null || femaleCharacters[0] == null)
                 return;
 
             if (siriReplaceList.Contains(fileFemale))
@@ -925,6 +945,26 @@ namespace AI_BetterHScenes
             }
 
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+        }
+
+        public static void FixEffectors()
+        {
+            if (!fixEffectors.Value)
+                return;
+
+            foreach (var character in characters)
+            {
+                RootMotion.FinalIK.IKEffector[] effectorList = character.fullBodyIK.solver.effectors;
+
+                if (effectorList == null)
+                    continue;
+
+                for (Effector effector = Effector.LeftHand; effector <= Effector.RightFoot && (int)effector < effectorList.Length; effector++)
+                {
+                    effectorList[(int)effector].positionWeight = 1;
+                    effectorList[(int)effector].rotationWeight = 1;
+                }
+            }
         }
 
         private static void HScene_sceneLoaded(bool loaded)
