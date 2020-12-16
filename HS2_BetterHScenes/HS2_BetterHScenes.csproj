@@ -69,8 +69,9 @@
       <HintPath>..\packages\IllusionLibs.HoneySelect2.IL.2020.5.29.2\lib\net46\IL.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Obi">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\HoneySelect 2\HoneySelect2_Data\Managed\Obi.dll</HintPath>
+    <Reference Include="Obi, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\libs\Game\HS2\Obi.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Sirenix.Serialization, Version=2.0.13.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.HoneySelect2.Sirenix.Serialization.2020.5.29.2\lib\net46\Sirenix.Serialization.dll</HintPath>
@@ -80,6 +81,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
