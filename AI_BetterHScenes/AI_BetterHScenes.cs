@@ -44,7 +44,7 @@ namespace AI_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.5.6";
+        public const string VERSION = "2.5.8";
 
         public new static ManualLogSource Logger;
 
@@ -79,7 +79,6 @@ namespace AI_BetterHScenes
         private static bool oldMapState;
         private static LightShadows oldSunShadowsState;
 
-        public static AnimationOffsets animationOffsets;
         private static bool shouldApplyOffsets;
         public static string currentMotion;
 
@@ -90,12 +89,13 @@ namespace AI_BetterHScenes
         public static bool bTwoFootException = false;
         public static bool useReplacements = false;
 
-        private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" }; 
-        private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
+        private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" };
+        private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38" };
         private static readonly List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
         private static readonly List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
-        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_09", "aia_f_14", "aia_f_21" };
+        private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_14", "aia_f_21" };
         private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
+        private static readonly List<string> rightKosiReplaceList = new List<string>() { "aia_f_09" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
 
         //-- Draggers --//
@@ -283,7 +283,6 @@ namespace AI_BetterHScenes
             };
 
             shouldApplyOffsets = false;
-            animationOffsets = new AnimationOffsets();
             HSceneOffset.LoadOffsetsFromFile();
 
             harmony = new Harmony(nameof(AI_BetterHScenes));
@@ -601,6 +600,39 @@ namespace AI_BetterHScenes
 
                 Console.WriteLine(ex);
             }
+
+            // clear out everything that was initialized by SetStartVoice
+
+            hScene = null;
+            hFlagCtrl = null;
+            hSprite = null;
+            manager = null;
+            hCamera = null;
+
+            hSceneTrav = null;
+            listTrav = null;
+
+            characters = null;
+            maleCharacters = null;
+            femaleCharacters = null;
+            maleMotionList = null;
+
+            map = null;
+            sun = null;
+            collisionHelpers = null;
+
+            cameraShouldLock = false;
+            oldMapState = false;
+
+            shouldApplyOffsets = false;
+            currentMotion = null;
+
+            hProcMode = 0;
+            bBaseReplacement = false;
+            bIdleGlowException = false;
+            bFootJobException = false;
+            bTwoFootException = false;
+            useReplacements = false;
         }
 
         //-- Strip on start of H scene --//
@@ -720,6 +752,15 @@ namespace AI_BetterHScenes
         {
             if (applySavedOffsets.Value)
                 shouldApplyOffsets = true;
+
+            if (hScene == null)
+                return;
+
+            SliderUI.ClearBaseReplacements();
+            bBaseReplacement = false;
+            bIdleGlowException = false;
+            bFootJobException = false;
+            bTwoFootException = false;
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "ChangeAnimation")]
@@ -930,6 +971,15 @@ namespace AI_BetterHScenes
                 Transform leftContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kokan_00")).FirstOrDefault();
                 if (leftContact != null)
                     SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
+
+                bBaseReplacement = true;
+                bIdleGlowException = true;
+            }
+            else if (rightKosiReplaceList.Contains(fileFemale))
+            {
+                Transform rightContact = femaleCharacters[0].GetComponentsInChildren<Transform>().Where(x => x.name.Contains("k_f_kosi02_00")).FirstOrDefault();
+                if (rightContact != null)
+                    SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
 
                 bBaseReplacement = true;
                 bIdleGlowException = true;
