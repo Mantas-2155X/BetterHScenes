@@ -19,6 +19,7 @@ namespace HS2_BetterHScenes
 {
     [BepInPlugin(nameof(HS2_BetterHScenes), nameof(HS2_BetterHScenes), VERSION)]
     [BepInProcess("HoneySelect2")]
+    [BepInProcess("HoneySelect2VR")]
     public class HS2_BetterHScenes : BaseUnityPlugin
     {
         private enum ProcMode
