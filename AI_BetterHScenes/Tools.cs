@@ -67,6 +67,9 @@ namespace AI_BetterHScenes
 
         public static bool newChangebuttonactive()
         {
+            if (AI_BetterHScenes.hFlagCtrl == null)
+                return false;
+            
             if (AI_BetterHScenes.keepButtonsInteractive.Value && AI_BetterHScenes.hFlagCtrl.nowOrgasm)
                 return true;
             

@@ -44,7 +44,7 @@ namespace AI_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.5.8";
+        public const string VERSION = "2.5.9";
 
         public new static ManualLogSource Logger;
 
@@ -600,39 +600,6 @@ namespace AI_BetterHScenes
 
                 Console.WriteLine(ex);
             }
-
-            // clear out everything that was initialized by SetStartVoice
-
-            hScene = null;
-            hFlagCtrl = null;
-            hSprite = null;
-            manager = null;
-            hCamera = null;
-
-            hSceneTrav = null;
-            listTrav = null;
-
-            characters = null;
-            maleCharacters = null;
-            femaleCharacters = null;
-            maleMotionList = null;
-
-            map = null;
-            sun = null;
-            collisionHelpers = null;
-
-            cameraShouldLock = false;
-            oldMapState = false;
-
-            shouldApplyOffsets = false;
-            currentMotion = null;
-
-            hProcMode = 0;
-            bBaseReplacement = false;
-            bIdleGlowException = false;
-            bFootJobException = false;
-            bTwoFootException = false;
-            useReplacements = false;
         }
 
         //-- Strip on start of H scene --//
@@ -673,7 +640,7 @@ namespace AI_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
         public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(ref HVoiceCtrl.FaceInfo _face)
         {
-            if (_face == null)
+            if (_face == null || hFlagCtrl == null)
                 return;
 
             if (forceTears.Value == Tools.OffWeaknessAlways.Always || (forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
@@ -1024,7 +991,42 @@ namespace AI_BetterHScenes
             if (loaded)
                 harmony.PatchAll(typeof(AI_BetterHScenes));
             else
+            {
                 harmony.UnpatchAll(nameof(AI_BetterHScenes));
+                
+                // clear out everything that was initialized by SetStartVoice
+
+                hScene = null;
+                hFlagCtrl = null;
+                hSprite = null;
+                manager = null;
+                hCamera = null;
+
+                hSceneTrav = null;
+                listTrav = null;
+
+                characters = null;
+                maleCharacters = null;
+                femaleCharacters = null;
+                maleMotionList = null;
+
+                map = null;
+                sun = null;
+                collisionHelpers = null;
+
+                cameraShouldLock = false;
+                oldMapState = false;
+
+                shouldApplyOffsets = false;
+                currentMotion = null;
+
+                hProcMode = 0;
+                bBaseReplacement = false;
+                bIdleGlowException = false;
+                bFootJobException = false;
+                bTwoFootException = false;
+                useReplacements = false;
+            }
         }
     }
 }
