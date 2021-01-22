@@ -197,18 +197,14 @@ namespace AI_BetterHScenes
 
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
 
-                float sliderMaxRotation = AI_BetterHScenes.sliderMaxRotation.Value;
-                float sliderMaxPosition = AI_BetterHScenes.sliderMaxPosition.Value;
-                if (selectedOffset != 0)
-                {
-                    sliderMaxRotation *= 2;
-                    sliderMaxPosition /= 2;
-                }
-
+                float sliderMaxRotation = AI_BetterHScenes.sliderMaxLimbRotation.Value;
+                float sliderMaxPosition = AI_BetterHScenes.sliderMaxLimbPosition.Value;
                 Vector3 lastPosition = new Vector3(0, 0, 0);
                 Vector3 lastRotation = new Vector3(0, 0, 0);
                 if (selectedOffset == (int)BodyPart.WholeBody)
                 {
+                    sliderMaxRotation = AI_BetterHScenes.sliderMaxBodyRotation.Value;
+                    sliderMaxPosition = AI_BetterHScenes.sliderMaxBodyPosition.Value;
                     lastPosition = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
                     lastRotation = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.z);
                 }
@@ -304,7 +300,7 @@ namespace AI_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x, -AI_BetterHScenes.sliderMaxHintPosition.Value, AI_BetterHScenes.sliderMaxHintPosition.Value);
                         }
 
                         using (GUILayout.VerticalScope verticalScopeY = new GUILayout.VerticalScope("box"))
@@ -316,7 +312,7 @@ namespace AI_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -AI_BetterHScenes.sliderMaxHintPosition.Value, AI_BetterHScenes.sliderMaxHintPosition.Value);
                         }
 
                         using (GUILayout.VerticalScope verticalScopeZ = new GUILayout.VerticalScope("box"))
@@ -328,7 +324,7 @@ namespace AI_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z, -AI_BetterHScenes.sliderMaxHintPosition.Value, AI_BetterHScenes.sliderMaxHintPosition.Value);
                         }
                     }
                 }

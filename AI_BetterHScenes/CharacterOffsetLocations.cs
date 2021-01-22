@@ -17,15 +17,15 @@ namespace AI_BetterHScenes
 
     public class OffsetVectors
     {
-        public Vector3 position = new Vector3(0, 0, 0);
-        public Vector3 rotation = new Vector3(0, 0, 0);
-        public Vector3 hintPosition = new Vector3(0, 0, 0);
+        public Vector3 position = Vector3.zero;
+        public Vector3 rotation = Vector3.zero;
+        public Vector3 hintPosition = Vector3.zero;
 
         public OffsetVectors()
         {
-            position = new Vector3(0, 0, 0);
-            rotation = new Vector3(0, 0, 0);
-            hintPosition = new Vector3(0, 0, 0);
+            position = Vector3.zero;
+            rotation = Vector3.zero;
+            hintPosition = Vector3.zero;
         }
 
         public OffsetVectors(Vector3 initPosition, Vector3 initRotation, Vector3 initHintPosition)
@@ -42,14 +42,14 @@ namespace AI_BetterHScenes
         public const string leftHandTransformName = "f_t_arm_L";
         public const string rightHandTransformName = "f_t_arm_R";
         public const string leftFootTransformName = "f_t_leg_L";
-        public const string rightFootTransform = "f_t_leg_R";
+        public const string rightFootTransformName = "f_t_leg_R";
         public const string leftElbowTransformName = "f_t_elbo_L";
         public const string rightElbowTransformName = "f_t_elbo_R";
         public const string leftKneeTransformName = "f_t_knee_L";
-        public const string rightKneeTransform = "f_t_knee_R";
+        public const string rightKneeTransformName = "f_t_knee_R";
 
-        public static readonly string[] offsetTransformNames = { bodyTransformName, leftHandTransformName, rightHandTransformName, leftFootTransformName, rightFootTransform };
-        public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransform };
+        public static readonly string[] offsetTransformNames = { bodyTransformName, leftHandTransformName, rightHandTransformName, leftFootTransformName, rightFootTransformName };
+        public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransformName };
         public Transform[] offsetTransforms = new Transform[offsetTransformNames.Length];
         public Transform[] hintTransforms = new Transform[hintTransformNames.Length];
         public Transform[] baseReplaceTransforms = new Transform[offsetTransformNames.Length];
@@ -89,7 +89,7 @@ namespace AI_BetterHScenes
                     return;
             }
 
-            for (var offset = 0; offset < hintTransformNames.Length; offset++)
+            for (var offset = (int)BodyPart.LeftHand; offset < hintTransformNames.Length; offset++)
             {
                 hintTransforms[offset] = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(hintTransformNames[offset])).FirstOrDefault();
                 if (hintTransforms[offset] == null)
@@ -109,8 +109,8 @@ namespace AI_BetterHScenes
                 }
                 else
                 {
-                    lastBasePosition[offset] = new Vector3(0, 0, 0);
-                    lastBaseRotation[offset] = new Vector3(0, 0, 0);
+                    lastBasePosition[offset] = Vector3.zero;
+                    lastBaseRotation[offset] = Vector3.zero;
                 }
             }
 
@@ -126,15 +126,15 @@ namespace AI_BetterHScenes
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
             {
-                if (baseData[offset].bone != null && !baseData[offset].bone.name.Contains("f_pv"))
-                {
-                    ChaControl targetCharacter = baseData[offset].bone.GetComponentInParent<ChaControl>();
+                if (baseData[offset].bone == null || baseData[offset].bone.name.Contains("f_pv"))
+                    continue;
 
-                    if (targetCharacter != null && character.chaID != targetCharacter.chaID)
-                    {
-                        dependentAnimation = true;
-                        return;
-                    }
+                ChaControl targetCharacter = baseData[offset].bone.GetComponentInParent<ChaControl>();
+
+                if (targetCharacter != null && character.chaID != targetCharacter.chaID)
+                {
+                    dependentAnimation = true;
+                    return;
                 }
             }
         }
@@ -178,13 +178,13 @@ namespace AI_BetterHScenes
                         offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
                 }
 
-                if (offsetVectors[offset].position != new Vector3(0, 0, 0))
+                if (offsetVectors[offset].position != Vector3.zero)
                    offsetTransforms[offset].localPosition += offsetVectors[offset].position;
 
-                if (offsetVectors[offset].rotation != new Vector3(0, 0, 0))
+                if (offsetVectors[offset].rotation != Vector3.zero)
                     offsetTransforms[offset].localEulerAngles += offsetVectors[offset].rotation;
 
-                if (offsetVectors[offset].hintPosition != new Vector3(0, 0, 0))
+                if (offsetVectors[offset].hintPosition != Vector3.zero)
                     hintTransforms[offset].localPosition += offsetVectors[offset].hintPosition;
             }
         }
@@ -208,8 +208,8 @@ namespace AI_BetterHScenes
                 }
                 else
                 {
-                    lastBasePosition[offset] = new Vector3(0, 0, 0);
-                    lastBaseRotation[offset] = new Vector3(0, 0, 0);
+                    lastBasePosition[offset] = Vector3.zero;
+                    lastBaseRotation[offset] = Vector3.zero;
                 }
             }
         }

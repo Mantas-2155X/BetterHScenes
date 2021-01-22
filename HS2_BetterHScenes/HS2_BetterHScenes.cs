@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using AIChara;
+using CharaUtils;
 
 using Random = System.Random;
 
@@ -50,7 +51,7 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.5.9";
+        public const string VERSION = "2.6.0";
 
         public new static ManualLogSource Logger;
 
@@ -84,8 +85,8 @@ namespace HS2_BetterHScenes
         public static bool bTwoFootException = false;
         public static bool useReplacements = false;
 
-        private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" }; 
-        private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38"};
+        private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" };
+        private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38" };
         private static readonly List<string> huggingReplaceList = new List<string>() { "h2s_f_12", "h2s_f_13" };
         private static readonly List<string> footReplaceList = new List<string>() { "aih_f_08", "aih_f_24", "aih_f_28" };
         private static readonly List<string> rightKokanReplaceList = new List<string>() { "aia_f_14", "aia_f_21" };
@@ -99,8 +100,11 @@ namespace HS2_BetterHScenes
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
         public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
         public static ConfigEntry<string> offsetFile { get; private set; }
-        public static ConfigEntry<float> sliderMaxPosition { get; private set; }
-        public static ConfigEntry<float> sliderMaxRotation { get; private set; }
+        public static ConfigEntry<float> sliderMaxBodyPosition { get; private set; }
+        public static ConfigEntry<float> sliderMaxBodyRotation { get; private set; }
+        public static ConfigEntry<float> sliderMaxLimbPosition { get; private set; }
+        public static ConfigEntry<float> sliderMaxLimbRotation { get; private set; }
+        public static ConfigEntry<float> sliderMaxHintPosition { get; private set; }
 
         //-- Animations --//
         public static ConfigEntry<bool> enableAnimationFixer { get; private set; }
@@ -108,7 +112,8 @@ namespace HS2_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForMales { get; private set; }
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
-        public static ConfigEntry<bool> fixEffectors { get; private set; }   
+        public static ConfigEntry<bool> fixEffectors { get; private set; }
+        public static ConfigEntry<bool> jointCorrection { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -165,8 +170,11 @@ namespace HS2_BetterHScenes
             };
             useOneOffsetForAllMotions = Config.Bind("Animations > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
             offsetFile = Config.Bind("Animations > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
-            sliderMaxPosition = Config.Bind("Animations > Draggers", "Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the position slider bars."));
-            sliderMaxRotation = Config.Bind("Animations > Draggers", "Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the rotation slider bars."));
+            sliderMaxBodyPosition = Config.Bind("Animations > Draggers", "Body Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the body position slider bars."));
+            sliderMaxBodyRotation = Config.Bind("Animations > Draggers", "Body Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the body rotation slider bars."));
+            sliderMaxLimbPosition = Config.Bind("Animations > Draggers", "Limb Slider min/max position", 5f, new ConfigDescription("Maximum limits of the limb position slider bars."));
+            sliderMaxLimbRotation = Config.Bind("Animations > Draggers", "Limb Slider min/max rotation", 90f, new ConfigDescription("Maximum limits of the limb rotation slider bars."));
+            sliderMaxHintPosition = Config.Bind("Animations > Draggers", "Hint Slider min/max position", 15f, new ConfigDescription("Maximum limits of the hint position slider bars."));
 
             (solveDependenciesFirst = Config.Bind("Animations > Solver", "Solve Independent Animations First", true, new ConfigDescription("Re-orders animation solving.  If the male animation is dependent on the female animation, the female animation will be solved first.  Some animations have both male and female dependencies.  These ones will run females first, so female dependencies will be broken.  This can be fixed by using last frame (see below)"))).SettingChanged += delegate
             {
@@ -186,6 +194,12 @@ namespace HS2_BetterHScenes
             {
                 if (hScene != null)
                     FixEffectors();
+            };
+
+            (jointCorrection = Config.Bind("Animations > Solver", "Joint Correction", true, new ConfigDescription("Runs an additional joint correction after IK solving to improve the look of joints that have moved a lot from their default position"))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    EnableJointCorrection(jointCorrection.Value);
             };
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
@@ -245,12 +259,12 @@ namespace HS2_BetterHScenes
             SceneManager.sceneLoaded += SceneManager_sceneLoaded;
         }
 
-    //-- Draw chara draggers UI --//
-    private void OnGUI()
+        //-- Draw chara draggers UI --//
+        private void OnGUI()
         {
             if (activeDraggerUI && hScene != null)
                 SliderUI.DrawDraggersUI();
-                
+
             if (activeAnimationUI && hScene != null)
                 AnimationUI.DrawAnimationUI();
         }
@@ -354,7 +368,7 @@ namespace HS2_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
         public static bool SolverManager_PreLateUpdate(RootMotion.SolverManager __instance)
         {
-            if (hScene == null)
+            if (hScene == null || shouldApplyOffsets)
                 return true;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
@@ -387,7 +401,7 @@ namespace HS2_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(RootMotion.SolverManager), "LateUpdate")]
         public static void SolverManager_PostLateUpdate(RootMotion.SolverManager __instance)
         {
-            if (hScene == null || !enableAnimationFixer.Value || !solveDependenciesFirst.Value)
+            if (hScene == null || !enableAnimationFixer.Value || !solveDependenciesFirst.Value || shouldApplyOffsets)
                 return;
 
             ChaControl character = __instance.GetComponentInParent<ChaControl>();
@@ -459,17 +473,30 @@ namespace HS2_BetterHScenes
                 femaleCharacters.Add(female);
                 characters.Add(female);
             }
-            
+
             if (characters == null)
                 return;
 
+            foreach (var character in characters.Where(character => character != null))
+            {
+                Expression expression = character.GetComponent<Expression>();
+                if (expression != null)
+                    continue;
+
+                expression = character.gameObject.AddComponent<Expression>();
+                expression.SetCharaTransform(character.transform);
+                expression.LoadSetting("list/expression.unity3d", "cf_expression");
+                expression.Initialize();
+            }
+
             obiSolver = GameObject.Find("SiruObiMgr").GetComponentInChildren<Obi.ObiSolver>(true);
- 
+
             if (obiSolver != null)
                 obiSolver.UpdateOrder = obiUpdateMode.Value;
 
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
             SliderUI.InitDraggersUI();
+            EnableJointCorrection(jointCorrection.Value);
         }
 
         //-- End of HScene --//
@@ -656,7 +683,7 @@ namespace HS2_BetterHScenes
             if (femaleCharacters == null || femaleCharacters[0] == null)
                 return;
 
-                femaleCharacters[0].setPlay(playAnimation, 0);
+            femaleCharacters[0].setPlay(playAnimation, 0);
             MotionIKDataBinder ikBinder = femaleCharacters[0].GetComponent<MotionIKDataBinder>();
             if (ikBinder != null)
                 ikBinder.motionIK.Calc(playAnimation);
@@ -729,7 +756,6 @@ namespace HS2_BetterHScenes
 
             if (hFlagCtrl.voice.changeTaii)
                 hFlagCtrl.voice.changeTaii = false;
-
         }
 
         public static void FixMotionList(string fileFemale)
@@ -871,13 +897,23 @@ namespace HS2_BetterHScenes
 
         private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)
         {
-            if (lsm != LoadSceneMode.Single) 
+            if (lsm != LoadSceneMode.Single)
                 return;
 
             if (scene.name == "HScene")
                 harmony.PatchAll(typeof(HS2_BetterHScenes));
             else
                 harmony.UnpatchAll(nameof(HS2_BetterHScenes));
+        }
+
+        private static void EnableJointCorrection(bool enable)
+        {
+            foreach (var character in characters.Where(character => character != null))
+            {
+                Expression expression = character.GetComponent<Expression>();
+                if (expression != null)
+                    expression.enable = enable;
+            }
         }
     }
 }

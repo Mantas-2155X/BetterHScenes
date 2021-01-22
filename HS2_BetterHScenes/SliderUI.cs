@@ -135,7 +135,7 @@ namespace HS2_BetterHScenes
             {
                 for (var offset = 0; offset < characterOffsets[charIndex].offsetVectors.Length; offset++)
                 {
-                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 0));
+                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(Vector3.zero, Vector3.zero, Vector3.zero);
                 }
             }
 
@@ -196,18 +196,14 @@ namespace HS2_BetterHScenes
 
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
 
-                float sliderMaxRotation = HS2_BetterHScenes.sliderMaxRotation.Value;
-                float sliderMaxPosition = HS2_BetterHScenes.sliderMaxPosition.Value;
-                if (selectedOffset != 0)
-                {
-                    sliderMaxRotation *= 2;
-                    sliderMaxPosition /= 2;
-                }
-
-                Vector3 lastPosition = new Vector3(0, 0, 0);
-                Vector3 lastRotation = new Vector3(0, 0, 0);
+                float sliderMaxRotation = HS2_BetterHScenes.sliderMaxLimbRotation.Value;
+                float sliderMaxPosition = HS2_BetterHScenes.sliderMaxLimbPosition.Value;
+                Vector3 lastPosition = Vector3.zero;
+                Vector3 lastRotation = Vector3.zero;
                 if (selectedOffset == (int)BodyPart.WholeBody)
                 {
+                    sliderMaxRotation = HS2_BetterHScenes.sliderMaxBodyRotation.Value;
+                    sliderMaxPosition = HS2_BetterHScenes.sliderMaxBodyPosition.Value;
                     lastPosition = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position.z);
                     lastRotation = new Vector3(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.x, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.y, characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation.z);
                 }
@@ -303,7 +299,7 @@ namespace HS2_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x, -HS2_BetterHScenes.sliderMaxHintPosition.Value, HS2_BetterHScenes.sliderMaxHintPosition.Value);
                         }
 
                         using (GUILayout.VerticalScope verticalScopeY = new GUILayout.VerticalScope("box"))
@@ -315,7 +311,7 @@ namespace HS2_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y, -HS2_BetterHScenes.sliderMaxHintPosition.Value, HS2_BetterHScenes.sliderMaxHintPosition.Value);
                         }
 
                         using (GUILayout.VerticalScope verticalScopeZ = new GUILayout.VerticalScope("box"))
@@ -327,7 +323,7 @@ namespace HS2_BetterHScenes
                                 if (GUILayout.Button("Reset", GUILayout.MaxWidth(uiWidth / 12)))
                                     characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = 0;
                             }
-                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z, -sliderMaxPosition, sliderMaxPosition);
+                            characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z = GUILayout.HorizontalSlider(characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z, -HS2_BetterHScenes.sliderMaxHintPosition.Value, HS2_BetterHScenes.sliderMaxHintPosition.Value);
                         }
                     }
                 }

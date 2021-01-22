@@ -61,7 +61,7 @@ namespace HS2_BetterHScenes
                         OffsetVectors[] loadOffsets = new OffsetVectors[(int)BodyPart.BodyPartsCount];
                         loadOffsets[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(characterOffsetParameters.PositionOffsetX, characterOffsetParameters.PositionOffsetY, characterOffsetParameters.PositionOffsetZ),
                                                                                  new Vector3(characterOffsetParameters.RotationOffsetP, characterOffsetParameters.RotationOffsetY, characterOffsetParameters.RotationOffsetR),
-                                                                                 new Vector3(0,0,0));
+                                                                                 Vector3.zero);
                         loadOffsets[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(characterOffsetParameters.LeftHandPositionOffsetX, characterOffsetParameters.LeftHandPositionOffsetY, characterOffsetParameters.LeftHandPositionOffsetZ),
                                                                                 new Vector3(characterOffsetParameters.LeftHandRotationOffsetP, characterOffsetParameters.LeftHandRotationOffsetY, characterOffsetParameters.LeftHandRotationOffsetR), 
                                                                                 new Vector3(characterOffsetParameters.LeftHandHintPositionOffsetX, characterOffsetParameters.LeftHandHintPositionOffsetY, characterOffsetParameters.LeftHandHintPositionOffsetZ));
