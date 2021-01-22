@@ -50,7 +50,7 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.5.8";
+        public const string VERSION = "2.5.9";
 
         public new static ManualLogSource Logger;
 
