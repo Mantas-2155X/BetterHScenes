@@ -69,6 +69,7 @@ namespace AI_BetterHScenes
 
         private static GameObject map;
         private static Light sun;
+        private static EnviroSky enviroSky;
         private static List<SkinnedCollisionHelper> collisionHelpers;
 
         private static bool OnHStart;
@@ -165,6 +166,7 @@ namespace AI_BetterHScenes
         //-- Performance --//
         private static ConfigEntry<bool> disableMap { get; set; }
         private static ConfigEntry<bool> disableSunShadows { get; set; }
+        private static ConfigEntry<bool> pauseTimeDuringH { get; set; }
         private static ConfigEntry<bool> optimizeCollisionHelpers { get; set; }
 
         private void Awake()
@@ -280,6 +282,17 @@ namespace AI_BetterHScenes
                     return;
 
                 sun.shadows = disableSunShadows.Value ? LightShadows.None : LightShadows.Soft;
+            };
+
+            (pauseTimeDuringH = Config.Bind("Performance Improvements", "Disable world simulation", false, new ConfigDescription("Disable world simulation (time) during H scene"))).SettingChanged += (s, e) =>
+            {
+                if (enviroSky == null || hScene == null)
+                    return;
+
+                if (pauseTimeDuringH.Value)
+                    enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.None;
+                else
+                    enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.Simulated;
             };
 
             (optimizeCollisionHelpers = Config.Bind("Performance Improvements", "Optimize collisionhelpers", true, new ConfigDescription("Optimize collisionhelpers by letting them update once per frame"))).SettingChanged += (s, e) =>
@@ -515,6 +528,8 @@ namespace AI_BetterHScenes
             if (sunObj == null)
                 return;
 
+            enviroSky = GameObject.Find("CommonSpace/MapRoot/MapSimulation(Clone)/EnviroSkyGroup(Clone)/EnviroSky")?.GetComponent<EnviroSky>();
+
             cameraShouldLock = true;
             sun = sunObj.GetComponent<Light>();
 
@@ -560,6 +575,9 @@ namespace AI_BetterHScenes
             if (disableSunShadows.Value)
                 sun.shadows = LightShadows.None;
 
+            if (enviroSky != null && pauseTimeDuringH.Value)
+                enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.None;
+
             if (unlockCamera.Value)
             {
                 hCamera.isLimitDir = false;
@@ -582,11 +600,26 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
         public static void HScene_EndProc_Patch()
         {
+            EndHScene();
+        }
+
+        //-- Some HScenes end via this path --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProcADV")]
+        public static void HScene_EndProcADV_Patch()
+        {
+            EndHScene();
+        }
+
+        private static void EndHScene()
+        {
             if (map != null)
                 map.SetActive(oldMapState);
 
             if (sun != null)
                 sun.shadows = oldSunShadowsState;
+
+            if (enviroSky != null)
+                enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.Simulated;
 
             activeDraggerUI = false;
             activeAnimationUI = false;
