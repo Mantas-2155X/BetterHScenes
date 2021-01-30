@@ -22,6 +22,7 @@ namespace AI_BetterHScenes
         {
             characterOffsets = new CharacterOffsetLocations[AI_BetterHScenes.characters.Count];
             copyOffsetVectors = new OffsetVectors[AI_BetterHScenes.characters.Count][];
+            shoeOffsets = new float[AI_BetterHScenes.characters.Count];
 
             for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
             {
