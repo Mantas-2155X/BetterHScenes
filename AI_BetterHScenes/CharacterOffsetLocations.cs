@@ -1,7 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 using AIChara;
+using CharaUtils;
 
 namespace AI_BetterHScenes
 {
@@ -59,6 +59,7 @@ namespace AI_BetterHScenes
         public Vector3[] lastBaseRotation = new Vector3[offsetTransformNames.Length];
         public bool allLimbsFound;
         public bool dependentAnimation = false;
+        public bool[] currentLimbOffset;
 
         public int LeftHand { get; private set; }
 
@@ -71,6 +72,7 @@ namespace AI_BetterHScenes
             lastBasePosition = new Vector3[offsetTransformNames.Length];
             lastBaseRotation = new Vector3[offsetTransformNames.Length];
             baseReplaceTransforms = new Transform[offsetTransformNames.Length];
+            currentLimbOffset = new bool[(int)BodyPart.BodyPartsCount];
 
             for (var offset = 0; offset < offsetVectors.Length; offset++)
                 offsetVectors[offset] = new OffsetVectors();
@@ -121,7 +123,7 @@ namespace AI_BetterHScenes
         {
             dependentAnimation = false;
 
-            if (!allLimbsFound || !AI_BetterHScenes.solveDependenciesFirst.Value)
+            if (!allLimbsFound || !AI_BetterHScenes.solveDependenciesFirst.Value || character == null)
                 return;
 
             for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
@@ -139,7 +141,7 @@ namespace AI_BetterHScenes
             }
         }
 
-        public void ApplyLimbOffsets(bool useLastSolverResult, bool useReplacementTransforms, bool bLeftFootJob, bool bRightFootJob)
+        public void ApplyLimbOffsets(bool useLastSolverResult, bool useReplacementTransforms, bool bLeftFootJob, bool bRightFootJob, bool shoeOffset, float shoeOffsetAmount)
         {
             if (!allLimbsFound)
                 return;
@@ -154,21 +156,20 @@ namespace AI_BetterHScenes
                     if (baseData[offset].bone != null)
                     {
                         if (useLastSolverResult)
+                        {
                             offsetTransforms[offset].position = lastBasePosition[offset];
-                        else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
-                            offsetTransforms[offset].position = baseReplaceTransforms[offset].position;
-                        else
-                            offsetTransforms[offset].position = baseData[offset].bone.position;
-                    }
-
-                    if (baseData[offset].bone != null)
-                    {
-                        if (useLastSolverResult)
                             offsetTransforms[offset].eulerAngles = lastBaseRotation[offset];
+                        }
                         else if (useReplacementTransforms && baseReplaceTransforms[offset] != null && baseData[offset].bone.name.Contains("f_pv"))
+                        {
+                            offsetTransforms[offset].position = baseReplaceTransforms[offset].position;
                             offsetTransforms[offset].eulerAngles = baseReplaceTransforms[offset].eulerAngles;
+                        }
                         else
+                        {
+                            offsetTransforms[offset].position = baseData[offset].bone.position;
                             offsetTransforms[offset].eulerAngles = baseData[offset].bone.eulerAngles;
+                        }
                     }
 
                     if (bLeftFootJob && offset == (int)BodyPart.LeftFoot && baseReplaceTransforms[(int)BodyPart.LeftHand] != null && baseReplaceTransforms[offset] != null)
@@ -178,14 +179,42 @@ namespace AI_BetterHScenes
                         offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
                 }
 
+                bool limbOffset = false;
                 if (offsetVectors[offset].position != Vector3.zero)
-                   offsetTransforms[offset].localPosition += offsetVectors[offset].position;
+                {
+                    offsetTransforms[offset].localPosition += offsetVectors[offset].position;
+                    limbOffset = true;
+                }
 
                 if (offsetVectors[offset].rotation != Vector3.zero)
+                {
                     offsetTransforms[offset].localEulerAngles += offsetVectors[offset].rotation;
+                    limbOffset = true;
+                }
 
                 if (offsetVectors[offset].hintPosition != Vector3.zero)
+                {
                     hintTransforms[offset].localPosition += offsetVectors[offset].hintPosition;
+                    limbOffset = true;
+                }
+
+                if (shoeOffset && ((offset == (int)BodyPart.LeftFoot) || (offset == (int)BodyPart.RightFoot)))
+                    offsetTransforms[offset].localPosition += offsetTransforms[offset].up * shoeOffsetAmount;
+
+                if (AI_BetterHScenes.jointCorrection.Value != AI_BetterHScenes.JointCorrection.AdjustmentsOnly || limbOffset == currentLimbOffset[offset])
+                    continue;
+
+                currentLimbOffset[offset] = limbOffset;
+
+                Expression expression = offsetTransforms[offset].GetComponentInParent<Expression>();
+                if (expression == null)
+                    continue;
+
+                foreach (var info in expression.info)
+                {
+                    if (info.categoryNo == offset - 1)
+                        info.enable = limbOffset;
+                }
             }
         }
 

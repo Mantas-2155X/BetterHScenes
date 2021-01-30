@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -17,6 +16,7 @@ namespace AI_BetterHScenes
 
         public static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
+        public static float[] shoeOffsets;
 
         public static void InitDraggersUI()
         {
@@ -27,6 +27,7 @@ namespace AI_BetterHScenes
             {
                 characterOffsets[charIndex] = new CharacterOffsetLocations();
                 copyOffsetVectors[charIndex] = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+                shoeOffsets[charIndex] = 0;
 
                 characterOffsets[charIndex].LoadCharacterTransforms(AI_BetterHScenes.characters[charIndex]);
             }
@@ -61,10 +62,15 @@ namespace AI_BetterHScenes
             }
         }
 
-        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues)
+        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues, float shoeOffset)
         {
-            if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].offsetVectors = offsetValues;
+            if (charIndex >= characterOffsets.Length)
+                return;
+
+            characterOffsets[charIndex].offsetVectors = offsetValues;
+
+            if (shoeOffset != 0.0)
+                shoeOffsets[charIndex] = shoeOffset;
         }
 
         private static void MoveCharacter(int charIndex, Vector3 position, Vector3 rotation)
@@ -98,7 +104,7 @@ namespace AI_BetterHScenes
                     continue;
 
                 var characterName = AI_BetterHScenes.characters[charIndex].fileParam.fullname;
-                var characterOffsetParams = new CharacterOffsets(characterName, characterOffsets[charIndex].offsetVectors);
+                var characterOffsetParams = new CharacterOffsets(characterName, characterOffsets[charIndex].offsetVectors, shoeOffsets[charIndex]);
 
                 characterPair.AddCharacterOffset(characterOffsetParams);
             }
@@ -136,7 +142,7 @@ namespace AI_BetterHScenes
             {
                 for (var offset = 0; offset < characterOffsets[charIndex].offsetVectors.Length; offset++)
                 {
-                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 0));
+                    characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(Vector3.zero, Vector3.zero, Vector3.zero);
                 }
             }
 
@@ -149,10 +155,10 @@ namespace AI_BetterHScenes
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
         }
 
-        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob, bool shoeOffset)
         {
             if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob);
+                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob, shoeOffset, shoeOffsets[charIndex]);
         }
 
         public static void UpdateDependentStatus()
@@ -190,7 +196,8 @@ namespace AI_BetterHScenes
                 selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
-                    GUILayout.Space((uiWidth / 5) - 10);
+                    GUILayout.Label("Heel Offset: ", GUILayout.Width((uiWidth / 5) - 10));
+                    shoeOffsets[selectedCharacter] = Convert.ToSingle(GUILayout.TextField(shoeOffsets[selectedCharacter].ToString("0.000"), GUILayout.Width((uiWidth / 5) - 10)));
                     if (GUILayout.Button("Mirror Active Limb"))
                         MirrorActiveLimb();
                 }
@@ -199,8 +206,8 @@ namespace AI_BetterHScenes
 
                 float sliderMaxRotation = AI_BetterHScenes.sliderMaxLimbRotation.Value;
                 float sliderMaxPosition = AI_BetterHScenes.sliderMaxLimbPosition.Value;
-                Vector3 lastPosition = new Vector3(0, 0, 0);
-                Vector3 lastRotation = new Vector3(0, 0, 0);
+                Vector3 lastPosition = Vector3.zero;
+                Vector3 lastRotation = Vector3.zero;
                 if (selectedOffset == (int)BodyPart.WholeBody)
                 {
                     sliderMaxRotation = AI_BetterHScenes.sliderMaxBodyRotation.Value;

@@ -9,7 +9,7 @@ namespace AI_BetterHScenes
 {
     public static class HSceneOffset
     {
-        public static AnimationOffsets animationOffsets;
+        private static AnimationOffsets animationOffsets;
 
         //-- Apply character offsets for current animation, if they can be found --//
         public static void ApplyCharacterOffsets()
@@ -75,7 +75,7 @@ namespace AI_BetterHScenes
                                                                                  new Vector3(characterOffsetParameters.RightFootRotationOffsetP, characterOffsetParameters.RightFootRotationOffsetY, characterOffsetParameters.RightFootRotationOffsetR),
                                                                                  new Vector3(characterOffsetParameters.RightFootHintPositionOffsetX, characterOffsetParameters.RightFootHintPositionOffsetY, characterOffsetParameters.RightFootHintPositionOffsetZ));
 
-                        SliderUI.LoadOffsets(charIndex, loadOffsets);
+                        SliderUI.LoadOffsets(charIndex, loadOffsets, characterOffsetParameters.ShoeOffset);
 
                         bValidOffsetsFound = true;
                     }

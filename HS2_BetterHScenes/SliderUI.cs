@@ -16,16 +16,19 @@ namespace HS2_BetterHScenes
 
         public static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
+        public static float[] shoeOffsets;
 
         public static void InitDraggersUI()
         {
             characterOffsets = new CharacterOffsetLocations[HS2_BetterHScenes.characters.Count];
             copyOffsetVectors = new OffsetVectors[HS2_BetterHScenes.characters.Count][];
+            shoeOffsets = new float[HS2_BetterHScenes.characters.Count];
 
             for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
             {
                 characterOffsets[charIndex] = new CharacterOffsetLocations();
                 copyOffsetVectors[charIndex] = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+                shoeOffsets[charIndex] = 0;
 
                 characterOffsets[charIndex].LoadCharacterTransforms(HS2_BetterHScenes.characters[charIndex]);
             }
@@ -60,10 +63,15 @@ namespace HS2_BetterHScenes
             }
         }
 
-        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues)
+        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues, float shoeOffset)
         {
-            if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].offsetVectors = offsetValues;
+            if (charIndex >= characterOffsets.Length)
+                return;
+
+            characterOffsets[charIndex].offsetVectors = offsetValues;
+
+            if (shoeOffset != 0.0)
+                shoeOffsets[charIndex] = shoeOffset;
         }
 
         private static void MoveCharacter(int charIndex, Vector3 position, Vector3 rotation)
@@ -97,7 +105,7 @@ namespace HS2_BetterHScenes
                     continue;
 
                 var characterName = HS2_BetterHScenes.characters[charIndex].fileParam.fullname;
-                var characterOffsetParams = new CharacterOffsets(characterName, characterOffsets[charIndex].offsetVectors);
+                var characterOffsetParams = new CharacterOffsets(characterName, characterOffsets[charIndex].offsetVectors, shoeOffsets[charIndex]);
 
                 characterPair.AddCharacterOffset(characterOffsetParams);
             }
@@ -148,10 +156,10 @@ namespace HS2_BetterHScenes
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
         }
 
-        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob, bool shoeOffset)
         {
             if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob);
+                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob, shoeOffset, shoeOffsets[charIndex]);
         }
 
         public static void UpdateDependentStatus()
@@ -189,7 +197,8 @@ namespace HS2_BetterHScenes
                 selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
-                    GUILayout.Space((uiWidth / 5) - 10);
+                    GUILayout.Label("Heel Offset: ", GUILayout.Width((uiWidth / 5) - 10));
+                    shoeOffsets[selectedCharacter] = Convert.ToSingle(GUILayout.TextField(shoeOffsets[selectedCharacter].ToString("0.000"), GUILayout.Width((uiWidth / 5) - 10)));
                     if (GUILayout.Button("Mirror Active Limb"))
                         MirrorActiveLimb();
                 }

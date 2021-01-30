@@ -231,6 +231,9 @@ namespace HS2_BetterHScenes
         [XmlElement("RightFootHintPositionOffsetZ")]
         public float RightFootHintPositionOffsetZ { get; set; }
 
+        [XmlElement("ShoeOffset")]
+        public float ShoeOffset { get; set; }
+
         public bool ShouldSerializePositionOffsetX() => PositionOffsetX != 0.0;
         public bool ShouldSerializePositionOffsetY() => PositionOffsetY != 0.0;
         public bool ShouldSerializePositionOffsetZ() => PositionOffsetZ != 0.0;
@@ -275,9 +278,10 @@ namespace HS2_BetterHScenes
         public bool ShouldSerializeRightFootHintPositionOffsetY() => RightFootHintPositionOffsetY != 0.0;
         public bool ShouldSerializeRightFootHintPositionOffsetZ() => RightFootHintPositionOffsetZ != 0.0;
 
+        public bool ShouldSerializeShoeOffset() => ShoeOffset != 0.0;
         public CharacterOffsets() { }
 
-        public CharacterOffsets(string _characterName, OffsetVectors[] _offsetVectors)
+        public CharacterOffsets(string _characterName, OffsetVectors[] _offsetVectors, float _shoeOffset)
         {
             CharacterName = _characterName;
 
@@ -330,6 +334,8 @@ namespace HS2_BetterHScenes
             RightFootHintPositionOffsetX = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.x;
             RightFootHintPositionOffsetY = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.y;
             RightFootHintPositionOffsetZ = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.z;
+
+            ShoeOffset = _shoeOffset;
         }
     }
 }

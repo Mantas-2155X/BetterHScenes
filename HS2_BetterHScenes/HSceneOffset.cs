@@ -75,7 +75,7 @@ namespace HS2_BetterHScenes
                                                                                  new Vector3(characterOffsetParameters.RightFootRotationOffsetP, characterOffsetParameters.RightFootRotationOffsetY, characterOffsetParameters.RightFootRotationOffsetR),
                                                                                  new Vector3(characterOffsetParameters.RightFootHintPositionOffsetX, characterOffsetParameters.RightFootHintPositionOffsetY, characterOffsetParameters.RightFootHintPositionOffsetZ));
 
-                        SliderUI.LoadOffsets(charIndex, loadOffsets);
+                        SliderUI.LoadOffsets(charIndex, loadOffsets, characterOffsetParameters.ShoeOffset);
 
                         bValidOffsetsFound = true;
                     }

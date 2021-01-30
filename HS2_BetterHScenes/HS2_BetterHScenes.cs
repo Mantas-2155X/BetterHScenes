@@ -51,6 +51,13 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
+        public enum JointCorrection
+        {
+            Never,
+            AdjustmentsOnly,
+            Always
+        }
+
         public const string VERSION = "2.6.0";
 
         public new static ManualLogSource Logger;
@@ -113,7 +120,7 @@ namespace HS2_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
         public static ConfigEntry<bool> fixEffectors { get; private set; }
-        public static ConfigEntry<bool> jointCorrection { get; private set; }
+        public static ConfigEntry<JointCorrection> jointCorrection { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -196,7 +203,7 @@ namespace HS2_BetterHScenes
                     FixEffectors();
             };
 
-            (jointCorrection = Config.Bind("Animations > Solver", "Joint Correction", true, new ConfigDescription("Runs an additional joint correction after IK solving to improve the look of joints that have moved a lot from their default position"))).SettingChanged += delegate
+            (jointCorrection = Config.Bind("Animations > Solver", "Joint Correction", JointCorrection.AdjustmentsOnly, new ConfigDescription("Runs an additional joint correction after IK solving.  Never = never use it, Always = always use it, AdjustmentsOnly = only use it for joints moved with the Slider UI"))).SettingChanged += delegate
             {
                 if (hScene != null)
                     EnableJointCorrection(jointCorrection.Value);
@@ -389,11 +396,11 @@ namespace HS2_BetterHScenes
             {
                 bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
                 bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob);
+                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob, !character.IsBareFoot);
             }
             else
             {
-                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false);
+                SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false, !character.IsBareFoot);
             }
             return true;
         }
@@ -412,7 +419,7 @@ namespace HS2_BetterHScenes
             {
                 if (SliderUI.characterOffsets[charIndex].dependentAnimation)
                 {
-                    SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false);
+                    SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false, !maleCharacters[charIndex].IsBareFoot);
                     maleCharacters[charIndex].fullBodyIK.UpdateSolverExternal();
                 }
             }
@@ -558,7 +565,7 @@ namespace HS2_BetterHScenes
         [HarmonyPrefix, HarmonyPatch(typeof(HVoiceCtrl), "SetFace")]
         public static void HVoiceCtrl_SetFace_ForceTearsOnWeakness(ref HVoiceCtrl.FaceInfo _face)
         {
-            if (_face == null)
+            if (_face == null || hFlagCtrl == null)
                 return;
 
             if (forceTears.Value == Tools.OffWeaknessAlways.Always || (forceTears.Value == Tools.OffWeaknessAlways.WeaknessOnly && hFlagCtrl.isFaintness))
@@ -833,7 +840,6 @@ namespace HS2_BetterHScenes
 
                     bTwoFootException = true;
                 }
-
             }
             else if (rightKokanReplaceList.Contains(fileFemale))
             {
@@ -906,13 +912,16 @@ namespace HS2_BetterHScenes
                 harmony.UnpatchAll(nameof(HS2_BetterHScenes));
         }
 
-        private static void EnableJointCorrection(bool enable)
+        private static void EnableJointCorrection(JointCorrection jointCorrection)
         {
             foreach (var character in characters.Where(character => character != null))
             {
                 Expression expression = character.GetComponent<Expression>();
                 if (expression != null)
-                    expression.enable = enable;
+                    expression.enable = jointCorrection != JointCorrection.Never;
+
+                foreach (var info in expression.info)
+                    info.enable = jointCorrection == JointCorrection.Always;
             }
         }
     }
