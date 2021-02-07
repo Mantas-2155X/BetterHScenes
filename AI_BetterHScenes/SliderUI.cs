@@ -156,10 +156,21 @@ namespace AI_BetterHScenes
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
         }
 
-        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob, bool shoeOffset)
+        public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob, bool shoeOffset, bool kissOffset)
         {
-            if (charIndex < characterOffsets.Length)
-                characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob, shoeOffset, shoeOffsets[charIndex]);
+            if (charIndex >= characterOffsets.Length)
+                return;
+
+            characterOffsets[charIndex].ApplyLimbOffsets(useLastFramesSolution, useReplacementTransforms, leftFootJob, rightFootJob, shoeOffset, shoeOffsets[charIndex]);
+
+            if (!kissOffset || charIndex != 0)
+                return;
+
+            Transform femaleMouth = characterOffsets[AI_BetterHScenes.maleCharacters.Count]?.mouthTransform;
+            if (femaleMouth == null)
+                return;
+
+            characterOffsets[charIndex].ApplyKissOffset(femaleMouth);
         }
 
         public static void UpdateDependentStatus()

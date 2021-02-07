@@ -47,12 +47,16 @@ namespace HS2_BetterHScenes
         public const string rightElbowTransformName = "f_t_elbo_R";
         public const string leftKneeTransformName = "f_t_knee_L";
         public const string rightKneeTransformName = "f_t_knee_R";
+        public const string mouthTransformName = "cf_J_MouthBase_s";
+        public const string hipTransformName = "cf_J_Hips";
 
         public static readonly string[] offsetTransformNames = { bodyTransformName, leftHandTransformName, rightHandTransformName, leftFootTransformName, rightFootTransformName };
         public static readonly string[] hintTransformNames = { bodyTransformName, leftElbowTransformName, rightElbowTransformName, leftKneeTransformName, rightKneeTransformName };
         public Transform[] offsetTransforms = new Transform[offsetTransformNames.Length];
         public Transform[] hintTransforms = new Transform[hintTransformNames.Length];
         public Transform[] baseReplaceTransforms = new Transform[offsetTransformNames.Length];
+        public Transform mouthTransform;
+        public Transform hipTransform;
         public Illusion.Component.Correct.BaseData[] baseData = new Illusion.Component.Correct.BaseData[offsetTransformNames.Length];
         public OffsetVectors[] offsetVectors = new OffsetVectors[offsetTransformNames.Length];
         public Vector3[] lastBasePosition = new Vector3[offsetTransformNames.Length];
@@ -115,6 +119,9 @@ namespace HS2_BetterHScenes
                     lastBaseRotation[offset] = Vector3.zero;
                 }
             }
+
+            mouthTransform = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(mouthTransformName)).FirstOrDefault();
+            hipTransform = character.GetComponentsInChildren<Transform>().Where(x => x.name.Contains(hipTransformName)).FirstOrDefault();
 
             allLimbsFound = true;
         }
@@ -217,6 +224,18 @@ namespace HS2_BetterHScenes
                 }
             }
         }
+
+        public void ApplyKissOffset(Transform offsetTarget)
+        {
+            Vector3 offset = offsetTarget.position
+                           + offsetTarget.right * HS2_BetterHScenes.kissOffset.Value.x
+                           + offsetTarget.up * HS2_BetterHScenes.kissOffset.Value.y
+                           + offsetTarget.forward * HS2_BetterHScenes.kissOffset.Value.z
+                           - mouthTransform.position;
+
+            hipTransform.position += offset;
+        }
+
 
         public void SaveBasePoints(bool useReplacementTransforms)
         {

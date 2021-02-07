@@ -52,7 +52,7 @@ namespace AI_BetterHScenes
             Always
         }
 
-        public const string VERSION = "2.6.0";
+        public const string VERSION = "2.6.1";
 
         public new static ManualLogSource Logger;
 
@@ -93,10 +93,11 @@ namespace AI_BetterHScenes
 
         public static int hProcMode = 0;
         public static bool bBaseReplacement = false;
-        public static bool bIdleGlowException = false;
+        public static bool bIdleAfterException = false;
         public static bool bFootJobException = false;
         public static bool bTwoFootException = false;
         public static bool useReplacements = false;
+        public static bool applyKissOffset = false;
 
         private static readonly List<string> siriReplaceList = new List<string>() { "ais_f_02", "ais_f_13", "ais_f_31", "ais_f_43", "ait_f_00", "ait_f_07" };
         private static readonly List<string> kosiReplaceList = new List<string>() { "ais_f_27", "ais_f_28", "ais_f_29", "ais_f_35", "ais_f_36", "ais_f_37", "ais_f_38" };
@@ -106,6 +107,7 @@ namespace AI_BetterHScenes
         private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> rightKosiReplaceList = new List<string>() { "aia_f_09" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
+        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12"};
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -126,6 +128,8 @@ namespace AI_BetterHScenes
         public static ConfigEntry<bool> useLastSolutionForFemales { get; private set; }
         public static ConfigEntry<bool> fixAttachmentPoints { get; private set; }
         public static ConfigEntry<bool> fixEffectors { get; private set; }
+        public static ConfigEntry<bool> kissCorrection { get; private set; }
+        public static ConfigEntry<Vector3> kissOffset { get; private set; }
         public static ConfigEntry<JointCorrection> jointCorrection { get; private set; }
 
         //-- Clothes --//
@@ -216,6 +220,13 @@ namespace AI_BetterHScenes
                 if (hScene != null)
                     FixEffectors();
             };
+
+            (kissCorrection = Config.Bind("Animations > Solver", "Fix Kiss Animations", true, new ConfigDescription("Apply an offset to the male character to align kiss animations"))).SettingChanged += delegate
+            {
+                if (hScene != null)
+                    FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
+            };
+            kissOffset = Config.Bind("Animations > Solver", "Kiss Offset", new Vector3(0.0f, -0.08f, 0.19f), new ConfigDescription("Offset applied to the target location for kiss alignment"));
 
             (jointCorrection = Config.Bind("Animations > Solver", "Joint Correction", JointCorrection.AdjustmentsOnly, new ConfigDescription("Runs an additional joint correction after IK solving.  Never = never use it, Always = always use it, AdjustmentsOnly = only use it for joints moved with the Slider UI"))).SettingChanged += delegate
             {
@@ -461,11 +472,11 @@ namespace AI_BetterHScenes
             {
                 bool leftFootJob = bFootJobException && (!bTwoFootException || currentMotion.Contains("Idle") || currentMotion.Contains("WLoop"));
                 bool rightFootJob = bFootJobException && bTwoFootException && currentMotion.Contains("O");
-                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob, !character.IsBareFoot);
+                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForFemales.Value, useReplacements, leftFootJob, rightFootJob, !character.IsBareFoot, false);
             }
             else
             {
-                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForMales.Value, useReplacements, false, false, !character.IsBareFoot);
+                SliderUI.ApplyLimbOffsets(characterIndex, useLastSolutionForMales.Value, useReplacements, false, false, !character.IsBareFoot, applyKissOffset);
             }
 
             return true;
@@ -485,7 +496,7 @@ namespace AI_BetterHScenes
             {
                 if (SliderUI.characterOffsets[charIndex].dependentAnimation)
                 {
-                    SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false, !maleCharacters[charIndex].IsBareFoot);
+                    SliderUI.ApplyLimbOffsets(charIndex, useLastSolutionForMales.Value, useReplacements, false, false, !maleCharacters[charIndex].IsBareFoot, applyKissOffset);
                     maleCharacters[charIndex].fullBodyIK.UpdateSolverExternal();
                 }
             }
@@ -703,7 +714,7 @@ namespace AI_BetterHScenes
 
             hProcMode = 0;
             bBaseReplacement = false;
-            bIdleGlowException = false;
+            bIdleAfterException = false;
             bFootJobException = false;
             bTwoFootException = false;
             useReplacements = false;
@@ -832,7 +843,7 @@ namespace AI_BetterHScenes
 
             SliderUI.ClearBaseReplacements();
             bBaseReplacement = false;
-            bIdleGlowException = false;
+            bIdleAfterException = false;
             bFootJobException = false;
             bTwoFootException = false;
         }
@@ -864,7 +875,11 @@ namespace AI_BetterHScenes
                 return;
 
             currentMotion = _strAnmName;
-            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+
+            bool bIdleAfterMotion = currentMotion.Contains("Idle") || currentMotion.Contains("_A");
+
+            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
+            applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(hScene.ctrlFlag.nowAnimationInfo.fileFemale) && !bIdleAfterMotion;
 
             if (useOneOffsetForAllMotions.Value)
                 return;
@@ -959,7 +974,7 @@ namespace AI_BetterHScenes
         {
             SliderUI.ClearBaseReplacements();
             bBaseReplacement = false;
-            bIdleGlowException = false;
+            bIdleAfterException = false;
             bFootJobException = false;
             bTwoFootException = false;
 
@@ -1038,7 +1053,7 @@ namespace AI_BetterHScenes
                     SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
 
                 bBaseReplacement = true;
-                bIdleGlowException = true;
+                bIdleAfterException = true;
             }
             else if (leftKokanReplaceList.Contains(fileFemale))
             {
@@ -1047,7 +1062,7 @@ namespace AI_BetterHScenes
                     SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
 
                 bBaseReplacement = true;
-                bIdleGlowException = true;
+                bIdleAfterException = true;
             }
             else if (rightKosiReplaceList.Contains(fileFemale))
             {
@@ -1056,7 +1071,7 @@ namespace AI_BetterHScenes
                     SliderUI.SetBaseReplacement(0, (int)BodyPart.RightHand, rightContact);
 
                 bBaseReplacement = true;
-                bIdleGlowException = true;
+                bIdleAfterException = true;
             }
             else if (leftKosiReplaceList.Contains(fileFemale))
             {
@@ -1065,10 +1080,12 @@ namespace AI_BetterHScenes
                     SliderUI.SetBaseReplacement(0, (int)BodyPart.LeftHand, leftContact);
 
                 bBaseReplacement = true;
-                bIdleGlowException = true;
+                bIdleAfterException = true;
             }
 
-            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleGlowException || (!currentMotion.Contains("Idle") && !currentMotion.Contains("_A")));
+            bool bIdleAfterMotion = currentMotion.Contains("Idle") || currentMotion.Contains("_A");
+            useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
+            applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(fileFemale) && !bIdleAfterMotion;
         }
 
         public static void FixEffectors()
@@ -1143,7 +1160,7 @@ namespace AI_BetterHScenes
 
                 hProcMode = 0;
                 bBaseReplacement = false;
-                bIdleGlowException = false;
+                bIdleAfterException = false;
                 bFootJobException = false;
                 bTwoFootException = false;
                 useReplacements = false;
