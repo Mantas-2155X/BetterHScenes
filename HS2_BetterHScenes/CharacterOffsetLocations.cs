@@ -63,7 +63,7 @@ namespace HS2_BetterHScenes
         public Vector3[] lastBaseRotation = new Vector3[offsetTransformNames.Length];
         public bool allLimbsFound;
         public bool dependentAnimation = false;
-        public bool[] currentLimbOffset;
+        public bool[] jointCorrection;
 
         public int LeftHand { get; private set; }
 
@@ -76,10 +76,13 @@ namespace HS2_BetterHScenes
             lastBasePosition = new Vector3[offsetTransformNames.Length];
             lastBaseRotation = new Vector3[offsetTransformNames.Length];
             baseReplaceTransforms = new Transform[offsetTransformNames.Length];
-            currentLimbOffset = new bool[(int)BodyPart.BodyPartsCount];
+            jointCorrection = new bool[(int)BodyPart.BodyPartsCount];
 
             for (var offset = 0; offset < offsetVectors.Length; offset++)
                 offsetVectors[offset] = new OffsetVectors();
+
+            for (var joint = 0; joint < jointCorrection.Length; joint++)
+                jointCorrection[joint] = HS2_BetterHScenes.defaultJointCorrection.Value;
 
             allLimbsFound = false;
         }
@@ -186,33 +189,25 @@ namespace HS2_BetterHScenes
                         offsetTransforms[offset].position += baseReplaceTransforms[(int)BodyPart.RightHand].position - baseReplaceTransforms[offset].position;
                 }
 
-                bool limbOffset = false;
                 if (offsetVectors[offset].position != Vector3.zero)
-                {
                     offsetTransforms[offset].localPosition += offsetVectors[offset].position;
-                    limbOffset = true;
-                }
 
                 if (offsetVectors[offset].rotation != Vector3.zero)
-                {
                     offsetTransforms[offset].localEulerAngles += offsetVectors[offset].rotation;
-                    limbOffset = true;
-                }
 
                 if (offsetVectors[offset].hintPosition != Vector3.zero)
-                {
                     hintTransforms[offset].localPosition += offsetVectors[offset].hintPosition;
-                    limbOffset = true;
-                }
 
                 if (shoeOffset && ((offset == (int)BodyPart.LeftFoot) || (offset == (int)BodyPart.RightFoot)))
                     offsetTransforms[offset].localPosition += offsetTransforms[offset].up * shoeOffsetAmount;
 
-                if (HS2_BetterHScenes.jointCorrection.Value != HS2_BetterHScenes.JointCorrection.AdjustmentsOnly || limbOffset == currentLimbOffset[offset])
-                    continue;
+            }
+        }
 
-                currentLimbOffset[offset] = limbOffset;
-
+        public void ApplyJointCorrections()
+        {
+            for (int offset = (int)BodyPart.LeftHand; offset < offsetTransforms.Length; offset++)
+            {
                 Expression expression = offsetTransforms[offset].GetComponentInParent<Expression>();
                 if (expression == null)
                     continue;
@@ -220,7 +215,7 @@ namespace HS2_BetterHScenes
                 foreach (var info in expression.info)
                 {
                     if (info.categoryNo == offset - 1)
-                        info.enable = limbOffset;
+                        info.enable = jointCorrection[offset];
                 }
             }
         }

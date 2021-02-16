@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
@@ -16,18 +17,21 @@ namespace AI_BetterHScenes
 
         public static CharacterOffsetLocations[] characterOffsets;
         private static OffsetVectors[][] copyOffsetVectors;
+        private static bool[][] copyJointCorrections;
         public static float[] shoeOffsets;
 
         public static void InitDraggersUI()
         {
             characterOffsets = new CharacterOffsetLocations[AI_BetterHScenes.characters.Count];
             copyOffsetVectors = new OffsetVectors[AI_BetterHScenes.characters.Count][];
+            copyJointCorrections = new bool[AI_BetterHScenes.characters.Count][];
             shoeOffsets = new float[AI_BetterHScenes.characters.Count];
 
             for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
             {
                 characterOffsets[charIndex] = new CharacterOffsetLocations();
                 copyOffsetVectors[charIndex] = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+                copyJointCorrections[charIndex] = new bool[(int)BodyPart.BodyPartsCount];
                 shoeOffsets[charIndex] = 0;
 
                 characterOffsets[charIndex].LoadCharacterTransforms(AI_BetterHScenes.characters[charIndex]);
@@ -63,15 +67,14 @@ namespace AI_BetterHScenes
             }
         }
 
-        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues, float shoeOffset)
+        public static void LoadOffsets(int charIndex, OffsetVectors[] offsetValues, bool[] jointCorrections, float shoeOffset)
         {
             if (charIndex >= characterOffsets.Length)
                 return;
 
             characterOffsets[charIndex].offsetVectors = offsetValues;
-
-            if (shoeOffset != 0.0)
-                shoeOffsets[charIndex] = shoeOffset;
+            characterOffsets[charIndex].jointCorrection = jointCorrections;
+            shoeOffsets[charIndex] = shoeOffset;
         }
 
         private static void MoveCharacter(int charIndex, Vector3 position, Vector3 rotation)
@@ -85,32 +88,23 @@ namespace AI_BetterHScenes
 
         private static void SavePosition(bool bAsDefault = false)
         {
-            string characterPairName = null;
-            foreach (var character in AI_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
-            {
-                if (characterPairName == null)
-                    characterPairName = character.fileParam.fullname;
-                else
-                    characterPairName += "_" + character.fileParam.fullname;
-            }
-
-            if (characterPairName == null)
-                return;
-
-            var characterPair = new CharacterPairList(characterPairName);
+            List<string> characterNames = new List<string>();
+            List<OffsetVectors[]> offsetsList = new List<OffsetVectors[]>();
+            List<float> shoeOffsetList = new List<float>();
+            List<bool[]> jointCorrectionsList = new List<bool[]>();
 
             for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
             {
                 if (!AI_BetterHScenes.characters[charIndex].visibleAll)
                     continue;
 
-                var characterName = AI_BetterHScenes.characters[charIndex].fileParam.fullname;
-                var characterOffsetParams = new CharacterOffsets(characterName, characterOffsets[charIndex].offsetVectors, shoeOffsets[charIndex]);
-
-                characterPair.AddCharacterOffset(characterOffsetParams);
+                characterNames.Add(AI_BetterHScenes.characters[charIndex].fileParam.fullname);
+                offsetsList.Add(characterOffsets[charIndex].offsetVectors);
+                jointCorrectionsList.Add(characterOffsets[charIndex].jointCorrection);
+                shoeOffsetList.Add(shoeOffsets[charIndex]);
             }
 
-            HSceneOffset.SaveCharacterPairPosition(characterPair, bAsDefault);
+            HSceneOffset.SaveCharacterGroupOffsets(characterNames, offsetsList, jointCorrectionsList, shoeOffsetList, bAsDefault);
         }
 
         private static void CopyPositions()
@@ -120,6 +114,7 @@ namespace AI_BetterHScenes
                 for (var bodyPart = 0; bodyPart < copyOffsetVectors[charIndex].Length; bodyPart++)
                 {
                     copyOffsetVectors[charIndex][bodyPart] = new OffsetVectors(characterOffsets[charIndex].offsetVectors[bodyPart].position, characterOffsets[charIndex].offsetVectors[bodyPart].rotation, characterOffsets[charIndex].offsetVectors[bodyPart].hintPosition);
+                    copyJointCorrections[charIndex][bodyPart] = characterOffsets[charIndex].jointCorrection[bodyPart];
                 }
             }
         }
@@ -131,10 +126,11 @@ namespace AI_BetterHScenes
                 for (var bodyPart = 0; bodyPart < copyOffsetVectors[charIndex].Length; bodyPart++)
                 {
                     characterOffsets[charIndex].offsetVectors[bodyPart] = new OffsetVectors(copyOffsetVectors[charIndex][bodyPart].position, copyOffsetVectors[charIndex][bodyPart].rotation, copyOffsetVectors[charIndex][bodyPart].hintPosition);
+                    characterOffsets[charIndex].jointCorrection[bodyPart] = copyJointCorrections[charIndex][bodyPart];
                 }
             }
 
-            ApplyPositions();
+            ApplyPositionsAndCorrections();
         }
 
         public static void ResetPositions()
@@ -144,16 +140,20 @@ namespace AI_BetterHScenes
                 for (var offset = 0; offset < characterOffsets[charIndex].offsetVectors.Length; offset++)
                 {
                     characterOffsets[charIndex].offsetVectors[offset] = new OffsetVectors(Vector3.zero, Vector3.zero, Vector3.zero);
+                    characterOffsets[charIndex].jointCorrection[offset] = AI_BetterHScenes.defaultJointCorrection.Value; ;
                 }
             }
 
-            ApplyPositions();
+            ApplyPositionsAndCorrections();
         }
 
-        public static void ApplyPositions()
+        public static void ApplyPositionsAndCorrections()
         {
             for (var charIndex = 0; charIndex < characterOffsets.Length; charIndex++)
+            {
                 MoveCharacter(charIndex, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].position, characterOffsets[charIndex].offsetVectors[(int)BodyPart.WholeBody].rotation);
+                characterOffsets[charIndex].ApplyJointCorrections();
+            }
         }
 
         public static void ApplyLimbOffsets(int charIndex, bool useLastFramesSolution, bool useReplacementTransforms, bool leftFootJob, bool rightFootJob, bool shoeOffset, bool kissOffset)
@@ -208,10 +208,22 @@ namespace AI_BetterHScenes
                 selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
-                    GUILayout.Label("Heel Offset: ", GUILayout.Width((uiWidth / 5) - 10));
-                    shoeOffsets[selectedCharacter] = Convert.ToSingle(GUILayout.TextField(shoeOffsets[selectedCharacter].ToString("0.000"), GUILayout.Width((uiWidth / 5) - 10)));
-                    if (GUILayout.Button("Mirror Active Limb"))
-                        MirrorActiveLimb();
+                    if (selectedOffset == (int)BodyPart.WholeBody)
+                    {
+                        GUILayout.Label("Heel Offset: ", GUILayout.Width((2 * uiWidth / 15) - 10));
+                        shoeOffsets[selectedCharacter] = Convert.ToSingle(GUILayout.TextField(shoeOffsets[selectedCharacter].ToString("0.000"), GUILayout.Width((2 * uiWidth / 15) - 10)));
+                    }
+                    else
+                    {
+                        bool lastCorrection = characterOffsets[selectedCharacter].jointCorrection[selectedOffset];
+                        characterOffsets[selectedCharacter].jointCorrection[selectedOffset] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[selectedOffset], "Joint Correction", GUILayout.Width((uiWidth / 5) - 10));
+
+                        if (lastCorrection != characterOffsets[selectedCharacter].jointCorrection[selectedOffset])
+                            characterOffsets[selectedCharacter].ApplyJointCorrections();
+
+                        if (GUILayout.Button("Mirror Active Limb"))
+                            MirrorActiveLimb();
+                    }
                 }
 
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
@@ -350,7 +362,7 @@ namespace AI_BetterHScenes
                 else
                 {
                     if (lastPosition != characterOffsets[selectedCharacter].offsetVectors[selectedOffset].position || lastRotation != characterOffsets[selectedCharacter].offsetVectors[selectedOffset].rotation)
-                        ApplyPositions();
+                        ApplyPositionsAndCorrections();
                 }
 
                 using (GUILayout.HorizontalScope controlScope = new GUILayout.HorizontalScope("box"))
@@ -409,6 +421,7 @@ namespace AI_BetterHScenes
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.x = -characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.x;
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.y = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.y;
             characterOffsets[selectedCharacter].offsetVectors[mirroredOffset].hintPosition.z = characterOffsets[selectedCharacter].offsetVectors[selectedOffset].hintPosition.z;
+            characterOffsets[selectedCharacter].jointCorrection[mirroredOffset] = characterOffsets[selectedCharacter].jointCorrection[selectedOffset];
         }
 
         public static void SaveBasePoints(bool useReplacementTransforms)

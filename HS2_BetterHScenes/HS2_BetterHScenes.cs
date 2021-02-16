@@ -51,14 +51,7 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
-        public enum JointCorrection
-        {
-            Never,
-            AdjustmentsOnly,
-            Always
-        }
-
-        public const string VERSION = "2.6.1";
+        public const string VERSION = "2.6.2";
 
         public new static ManualLogSource Logger;
 
@@ -109,6 +102,7 @@ namespace HS2_BetterHScenes
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
         public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
         public static ConfigEntry<string> offsetFile { get; private set; }
+        public static ConfigEntry<string> offsetFileV2 { get; private set; }
         public static ConfigEntry<float> sliderMaxBodyPosition { get; private set; }
         public static ConfigEntry<float> sliderMaxBodyRotation { get; private set; }
         public static ConfigEntry<float> sliderMaxLimbPosition { get; private set; }
@@ -124,7 +118,7 @@ namespace HS2_BetterHScenes
         public static ConfigEntry<bool> fixEffectors { get; private set; }
         public static ConfigEntry<bool> kissCorrection { get; private set; }
         public static ConfigEntry<Vector3> kissOffset { get; private set; }
-        public static ConfigEntry<JointCorrection> jointCorrection { get; private set; }
+        public static ConfigEntry<bool> defaultJointCorrection { get; private set; }
 
         //-- Clothes --//
         private static ConfigEntry<bool> preventDefaultAnimationChangeStrip { get; set; }
@@ -180,7 +174,8 @@ namespace HS2_BetterHScenes
                     shouldApplyOffsets = true;
             };
             useOneOffsetForAllMotions = Config.Bind("Animations > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
-            offsetFile = Config.Bind("Animations > Draggers", "Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the offset file card on disk."));
+            offsetFile = Config.Bind("Animations > Draggers", "Legacy Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the legacy offset file card on disk, will be converted to new offset file on startup."));
+            offsetFileV2 = Config.Bind("Animations > Draggers", "Offset File Path V2", "UserData/BetterHScenesOffsetsV2.xml", new ConfigDescription("Path of the offset file card on disk."));
             sliderMaxBodyPosition = Config.Bind("Animations > Draggers", "Body Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the body position slider bars."));
             sliderMaxBodyRotation = Config.Bind("Animations > Draggers", "Body Slider min/max rotation", 45f, new ConfigDescription("Maximum limits of the body rotation slider bars."));
             sliderMaxLimbPosition = Config.Bind("Animations > Draggers", "Limb Slider min/max position", 5f, new ConfigDescription("Maximum limits of the limb position slider bars."));
@@ -213,12 +208,7 @@ namespace HS2_BetterHScenes
                     FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
             };
             kissOffset = Config.Bind("Animations > Solver", "Kiss Offset", new Vector3(0.0f, -0.08f, 0.19f), new ConfigDescription("Offset applied to the target location for kiss alignment"));
-
-            (jointCorrection = Config.Bind("Animations > Solver", "Joint Correction", JointCorrection.AdjustmentsOnly, new ConfigDescription("Runs an additional joint correction after IK solving.  Never = never use it, Always = always use it, AdjustmentsOnly = only use it for joints moved with the Slider UI"))).SettingChanged += delegate
-            {
-                if (hScene != null)
-                    EnableJointCorrection(jointCorrection.Value);
-            };
+            defaultJointCorrection = Config.Bind("Animations > Solver", "Joint Correction Default", false, new ConfigDescription("Default enable/disable state of joint corrections in Slider UI"));
 
             preventDefaultAnimationChangeStrip = Config.Bind("QoL > Clothes", "Prevent default animationchange strip", true, new ConfigDescription("Prevent default animation change clothes strip (pants, panties, top half state)"));
 
@@ -515,7 +505,7 @@ namespace HS2_BetterHScenes
 
             Tools.SetGotoWeaknessCount(countToWeakness.Value);
             SliderUI.InitDraggersUI();
-            EnableJointCorrection(jointCorrection.Value);
+            EnableJointCorrection(defaultJointCorrection.Value);
         }
 
         //-- End of HScene --//
@@ -648,10 +638,7 @@ namespace HS2_BetterHScenes
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
             applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(hScene.ctrlFlag.nowAnimationInfo.fileFemale) && !bIdleAfterMotion;
 
-            if (useOneOffsetForAllMotions.Value)
-                return;
-
-            if (applySavedOffsets.Value)
+            if (applySavedOffsets.Value && !useOneOffsetForAllMotions.Value)
                 shouldApplyOffsets = true;
         }
 
@@ -919,16 +906,16 @@ namespace HS2_BetterHScenes
             }
         }
 
-        private static void EnableJointCorrection(JointCorrection jointCorrection)
+        private static void EnableJointCorrection(bool enable)
         {
             foreach (var character in characters.Where(character => character != null))
             {
                 Expression expression = character.GetComponent<Expression>();
-                if (expression != null)
-                    expression.enable = jointCorrection != JointCorrection.Never;
+                if (expression == null)
+                    continue;
 
                 foreach (var info in expression.info)
-                    info.enable = jointCorrection == JointCorrection.Always;
+                    info.enable = enable;
             }
         }
 

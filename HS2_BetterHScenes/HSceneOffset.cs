@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Serialization;
@@ -9,7 +10,7 @@ namespace HS2_BetterHScenes
 {
     public static class HSceneOffset
     {
-        private static AnimationOffsets animationOffsets;
+        private static BetterHScenesOffsetsXML hSceneOffsets;
 
         //-- Apply character offsets for current animation, if they can be found --//
         public static void ApplyCharacterOffsets()
@@ -23,64 +24,66 @@ namespace HS2_BetterHScenes
             if (HS2_BetterHScenes.currentMotion == null)
                 HS2_BetterHScenes.currentMotion = "default";
 
-            string characterPairName = null;
+            string characterGroupName = null;
             foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
             {
-                if (characterPairName == null)
-                    characterPairName = character.fileParam.fullname;
+                if (characterGroupName == null)
+                    characterGroupName = character.fileParam.fullname;
                 else
-                    characterPairName += "_" + character.fileParam.fullname;
+                    characterGroupName += "_" + character.fileParam.fullname;
             }
 
-            var animationList = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
-            if (animationList != null && characterPairName != null)
+            if (characterGroupName != null)
             {
-                MotionList motionList;
-                if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value)
-                {
-                    motionList = animationList.MotionList.Find(x => x.MotionName == "default");
-                }
-                else
-                {
-                    motionList = animationList.MotionList.Find(x => x.MotionName == HS2_BetterHScenes.currentMotion);
-                    if (motionList == null)
-                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
-                    else if (motionList.MotionName != HS2_BetterHScenes.currentMotion)
-                        motionList = animationList.MotionList.Find(x => x.MotionName == "default");
-                }
-
-                var characterPair = motionList?.CharacterPairList.Find(x => x.CharacterPairName == characterPairName);
-                if (characterPair != null)
+                var characterGroup = hSceneOffsets.CharacterGroupList.Find(x => x.CharacterGroupName == characterGroupName);
+                if (characterGroup != null)
                 {
                     for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
                     {
-                        var characterOffsetParameters = characterPair.CharacterOffsets.Find(x => x.CharacterName == HS2_BetterHScenes.characters[charIndex].fileParam.fullname);
-                        if (characterOffsetParameters == null)
+                        var character = characterGroup.CharacterList.Find(x => x.CharacterName == HS2_BetterHScenes.characters[charIndex].fileParam.fullname);
+                        if (character == null)
+                            continue;
+
+                        var animation = character.AnimationList.Find(x => x.AnimationName == currentAnimation);
+                        if (animation == null)
+                            continue;
+
+                        var motion = animation.MotionOffsetList.Find(x => x.MotionName == HS2_BetterHScenes.currentMotion);
+                        if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value || motion == null || motion.MotionName != HS2_BetterHScenes.currentMotion)
+                            motion = animation.MotionOffsetList.Find(x => x.MotionName == "default");
+
+                        if (motion == null)
                             continue;
 
                         OffsetVectors[] loadOffsets = new OffsetVectors[(int)BodyPart.BodyPartsCount];
-                        loadOffsets[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(characterOffsetParameters.PositionOffsetX, characterOffsetParameters.PositionOffsetY, characterOffsetParameters.PositionOffsetZ),
-                                                                                 new Vector3(characterOffsetParameters.RotationOffsetP, characterOffsetParameters.RotationOffsetY, characterOffsetParameters.RotationOffsetR),
+                        loadOffsets[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(motion.PositionOffsetX, motion.PositionOffsetY, motion.PositionOffsetZ),
+                                                                                 new Vector3(motion.RotationOffsetP, motion.RotationOffsetY, motion.RotationOffsetR),
                                                                                  Vector3.zero);
-                        loadOffsets[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(characterOffsetParameters.LeftHandPositionOffsetX, characterOffsetParameters.LeftHandPositionOffsetY, characterOffsetParameters.LeftHandPositionOffsetZ),
-                                                                                new Vector3(characterOffsetParameters.LeftHandRotationOffsetP, characterOffsetParameters.LeftHandRotationOffsetY, characterOffsetParameters.LeftHandRotationOffsetR), 
-                                                                                new Vector3(characterOffsetParameters.LeftHandHintPositionOffsetX, characterOffsetParameters.LeftHandHintPositionOffsetY, characterOffsetParameters.LeftHandHintPositionOffsetZ));
-                        loadOffsets[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(characterOffsetParameters.RightHandPositionOffsetX, characterOffsetParameters.RightHandPositionOffsetY, characterOffsetParameters.RightHandPositionOffsetZ),
-                                                                                 new Vector3(characterOffsetParameters.RightHandRotationOffsetP, characterOffsetParameters.RightHandRotationOffsetY, characterOffsetParameters.RightHandRotationOffsetR),
-                                                                                 new Vector3(characterOffsetParameters.RightHandHintPositionOffsetX, characterOffsetParameters.RightHandHintPositionOffsetY, characterOffsetParameters.RightHandHintPositionOffsetZ));
-                        loadOffsets[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(characterOffsetParameters.LeftFootPositionOffsetX, characterOffsetParameters.LeftFootPositionOffsetY, characterOffsetParameters.LeftFootPositionOffsetZ),
-                                                                                new Vector3(characterOffsetParameters.LeftFootRotationOffsetP, characterOffsetParameters.LeftFootRotationOffsetY, characterOffsetParameters.LeftFootRotationOffsetR),
-                                                                                new Vector3(characterOffsetParameters.LeftFootHintPositionOffsetX, characterOffsetParameters.LeftFootHintPositionOffsetY, characterOffsetParameters.LeftFootHintPositionOffsetZ));
-                        loadOffsets[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(characterOffsetParameters.RightFootPositionOffsetX, characterOffsetParameters.RightFootPositionOffsetY, characterOffsetParameters.RightFootPositionOffsetZ),
-                                                                                 new Vector3(characterOffsetParameters.RightFootRotationOffsetP, characterOffsetParameters.RightFootRotationOffsetY, characterOffsetParameters.RightFootRotationOffsetR),
-                                                                                 new Vector3(characterOffsetParameters.RightFootHintPositionOffsetX, characterOffsetParameters.RightFootHintPositionOffsetY, characterOffsetParameters.RightFootHintPositionOffsetZ));
+                        loadOffsets[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(motion.LeftHandPositionOffsetX, motion.LeftHandPositionOffsetY, motion.LeftHandPositionOffsetZ),
+                                                                                new Vector3(motion.LeftHandRotationOffsetP, motion.LeftHandRotationOffsetY, motion.LeftHandRotationOffsetR),
+                                                                                new Vector3(motion.LeftHandHintPositionOffsetX, motion.LeftHandHintPositionOffsetY, motion.LeftHandHintPositionOffsetZ));
+                        loadOffsets[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(motion.RightHandPositionOffsetX, motion.RightHandPositionOffsetY, motion.RightHandPositionOffsetZ),
+                                                                                 new Vector3(motion.RightHandRotationOffsetP, motion.RightHandRotationOffsetY, motion.RightHandRotationOffsetR),
+                                                                                 new Vector3(motion.RightHandHintPositionOffsetX, motion.RightHandHintPositionOffsetY, motion.RightHandHintPositionOffsetZ));
+                        loadOffsets[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(motion.LeftFootPositionOffsetX, motion.LeftFootPositionOffsetY, motion.LeftFootPositionOffsetZ),
+                                                                                new Vector3(motion.LeftFootRotationOffsetP, motion.LeftFootRotationOffsetY, motion.LeftFootRotationOffsetR),
+                                                                                new Vector3(motion.LeftFootHintPositionOffsetX, motion.LeftFootHintPositionOffsetY, motion.LeftFootHintPositionOffsetZ));
+                        loadOffsets[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(motion.RightFootPositionOffsetX, motion.RightFootPositionOffsetY, motion.RightFootPositionOffsetZ),
+                                                                                 new Vector3(motion.RightFootRotationOffsetP, motion.RightFootRotationOffsetY, motion.RightFootRotationOffsetR),
+                                                                                 new Vector3(motion.RightFootHintPositionOffsetX, motion.RightFootHintPositionOffsetY, motion.RightFootHintPositionOffsetZ));
 
-                        SliderUI.LoadOffsets(charIndex, loadOffsets, characterOffsetParameters.ShoeOffset);
+                        bool[] jointCorrections = new bool[(int)BodyPart.BodyPartsCount];
+                        jointCorrections[(int)BodyPart.LeftHand] = motion.LeftHandJointCorrection;
+                        jointCorrections[(int)BodyPart.RightHand] = motion.RightHandJointCorrection;
+                        jointCorrections[(int)BodyPart.LeftFoot] = motion.LeftFootJointCorrection;
+                        jointCorrections[(int)BodyPart.RightFoot] = motion.RightFootJointCorrection;
+
+                        SliderUI.LoadOffsets(charIndex, loadOffsets, jointCorrections, character.ShoeOffset);
 
                         bValidOffsetsFound = true;
                     }
 
-                    SliderUI.ApplyPositions();
+                    SliderUI.ApplyPositionsAndCorrections();
                 }
             }
 
@@ -92,72 +95,64 @@ namespace HS2_BetterHScenes
         }
 
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
-        public static void SaveCharacterPairPosition(CharacterPairList characterPair, bool isDefault = false)
+        public static void SaveCharacterGroupOffsets(List<string> characterNames, List<OffsetVectors[]> offsetVectorList, List<bool[]> jointCorrectionList, List<float> shoeOffsets, bool isDefault = false)
         {
-            var currentAnimation = HS2_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
-            if (currentAnimation == null || characterPair == null || HS2_BetterHScenes.currentMotion == null)
+            if (characterNames.IsNullOrEmpty() || offsetVectorList.IsNullOrEmpty() || shoeOffsets.IsNullOrEmpty())
                 return;
 
-            var motion = HS2_BetterHScenes.currentMotion;
+            var currentAnimation = HS2_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
+            if (currentAnimation == null || HS2_BetterHScenes.currentMotion == null)
+                return;
+
+            var currentMotion = HS2_BetterHScenes.currentMotion;
             if (isDefault)
-                motion = "default";
+                currentMotion = "default";
 
-            HS2_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation + " Motion " + motion + " for characters " + characterPair);
-
-            var animation = animationOffsets.Animations.Find(x => x.AnimationName == currentAnimation);
-
-            if (animation != null)
+            string characterGroupName = null;
+            foreach (var name in characterNames)
             {
-                animationOffsets.Animations.Remove(animation);
-
-                var motionList = animation.MotionList.Find(x => x.MotionName == motion);
-                if (motionList != null)
-                {
-                    animation.MotionList.Remove(motionList);
-                    
-                    var existingCharacterPair = motionList.CharacterPairList.Find(x => x.CharacterPairName == characterPair.CharacterPairName);
-                    if (existingCharacterPair != null)
-                        motionList.CharacterPairList.Remove(existingCharacterPair);
-                    
-                    motionList.CharacterPairList.Add(characterPair);
-                    animation.MotionList.Add(motionList);
-                }
+                if (characterGroupName == null)
+                    characterGroupName = name;
                 else
-                {
-                    motionList = new MotionList(motion);
-                    motionList.CharacterPairList.Add(characterPair);
-                    animation.MotionList.Add(motionList);
-                }
-
-                animationOffsets.AddCharacterAnimationsList(animation);
+                    characterGroupName += "_" + name;
             }
-            else
+
+            HS2_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation + " Motion " + currentMotion + " for characters " + characterGroupName);
+
+            var characterGroup = new CharacterGroupXML(characterGroupName);
+
+            for (var charIndex = 0; charIndex < characterNames.Count; charIndex++)
             {
-                animation = new AnimationsList(currentAnimation);
-                var motionList = new MotionList(motion);
-                motionList.CharacterPairList.Add(characterPair);
-                animation.MotionList.Add(motionList);
-                animationOffsets.AddCharacterAnimationsList(animation);
+                var motionOffsets = new MotionOffsetsXML(currentMotion, offsetVectorList[charIndex], jointCorrectionList[charIndex]);
+                var animation = new AnimationXML(currentAnimation);
+                animation.AddMotionOffsets(motionOffsets);
+
+                var character = new CharacterXML(characterNames[charIndex], shoeOffsets[charIndex]);
+                character.AddAnimation(animation);
+
+                characterGroup.AddCharacter(character);
             }
 
+            hSceneOffsets.AddCharacterGroup(characterGroup);
             SaveOffsetsToFile();
         }
 
         private static void SaveOffsetsToFile()
         {
-            if (animationOffsets == null)
+            if (hSceneOffsets == null)
                 return;
 
             // Create an XML serializer so we can store the offset configuration in an XML file
-            var serializer = new XmlSerializer(typeof(AnimationOffsets));
+            var serializer = new XmlSerializer(typeof(BetterHScenesOffsetsXML));
 
             // Create a new file stream in which the offset will be stored
             StreamWriter OffsetFile;
             try
             {
                 // Store the setup data
-                OffsetFile = new StreamWriter(HS2_BetterHScenes.offsetFile.Value);
-                serializer.Serialize(OffsetFile, animationOffsets);
+                string fileName = HS2_BetterHScenes.offsetFileV2.Value;
+                OffsetFile = new StreamWriter(fileName);
+                serializer.Serialize(OffsetFile, hSceneOffsets);
                 // serializer.Serialize(fileStream, offsets);
             }
             catch
@@ -175,16 +170,20 @@ namespace HS2_BetterHScenes
 
         public static void LoadOffsetsFromFile()
         {
+            ConvertLegacyFile();
+
             // Create an XML serializer so we can read the offset configuration in an XML file
-            var serializer = new XmlSerializer(typeof(AnimationOffsets));
-            animationOffsets = new AnimationOffsets();
+            var serializer = new XmlSerializer(typeof(BetterHScenesOffsetsXML));
+            hSceneOffsets = new BetterHScenesOffsetsXML();
 
             Stream OffsetFile;
             try
             {
                 // Read in the data
-                OffsetFile = new FileStream(HS2_BetterHScenes.offsetFile.Value, FileMode.Open);
-                animationOffsets = (AnimationOffsets)serializer.Deserialize(OffsetFile);
+                string fileName = HS2_BetterHScenes.offsetFileV2.Value;
+
+                OffsetFile = new FileStream(fileName, FileMode.Open);
+                hSceneOffsets = (BetterHScenesOffsetsXML)serializer.Deserialize(OffsetFile);
             }
             catch
             {
@@ -194,6 +193,76 @@ namespace HS2_BetterHScenes
 
             // Close the file
             OffsetFile.Close();
+        }
+
+        private static void ConvertLegacyFile()
+        {          
+            hSceneOffsets = new BetterHScenesOffsetsXML();
+
+            Stream OffsetFile;
+            try
+            {
+                // Read in the data
+                string fileName = HS2_BetterHScenes.offsetFile.Value;
+
+                OffsetFile = new FileStream(fileName, FileMode.Open);
+                var serializer = new XmlSerializer(typeof(AnimationOffsets));
+                var animationOffsets = (AnimationOffsets)serializer.Deserialize(OffsetFile);
+
+                foreach(var animation in animationOffsets.Animations)
+                {
+                    foreach(var motion in animation.MotionList)
+                    {
+                        foreach (var characterPair in motion.CharacterPairList)
+                        {
+                            CharacterGroupXML characterGroupXML = new CharacterGroupXML(characterPair.CharacterPairName);
+                            foreach (var character in characterPair.CharacterOffsets)
+                            {
+
+                                OffsetVectors[] offsetVectors = new OffsetVectors[(int)BodyPart.BodyPartsCount];
+                                offsetVectors[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(character.PositionOffsetX, character.PositionOffsetY, character.PositionOffsetZ),
+                                                                                         new Vector3(character.RotationOffsetP, character.RotationOffsetY, character.RotationOffsetR),
+                                                                                         Vector3.zero);
+                                offsetVectors[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(character.LeftHandPositionOffsetX, character.LeftHandPositionOffsetY, character.LeftHandPositionOffsetZ),
+                                                                                        new Vector3(character.LeftHandRotationOffsetP, character.LeftHandRotationOffsetY, character.LeftHandRotationOffsetR),
+                                                                                        new Vector3(character.LeftHandHintPositionOffsetX, character.LeftHandHintPositionOffsetY, character.LeftHandHintPositionOffsetZ));
+                                offsetVectors[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(character.RightHandPositionOffsetX, character.RightHandPositionOffsetY, character.RightHandPositionOffsetZ),
+                                                                                         new Vector3(character.RightHandRotationOffsetP, character.RightHandRotationOffsetY, character.RightHandRotationOffsetR),
+                                                                                         new Vector3(character.RightHandHintPositionOffsetX, character.RightHandHintPositionOffsetY, character.RightHandHintPositionOffsetZ));
+                                offsetVectors[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(character.LeftFootPositionOffsetX, character.LeftFootPositionOffsetY, character.LeftFootPositionOffsetZ),
+                                                                                        new Vector3(character.LeftFootRotationOffsetP, character.LeftFootRotationOffsetY, character.LeftFootRotationOffsetR),
+                                                                                        new Vector3(character.LeftFootHintPositionOffsetX, character.LeftFootHintPositionOffsetY, character.LeftFootHintPositionOffsetZ));
+                                offsetVectors[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(character.RightFootPositionOffsetX, character.RightFootPositionOffsetY, character.RightFootPositionOffsetZ),
+                                                                                         new Vector3(character.RightFootRotationOffsetP, character.RightFootRotationOffsetY, character.RightFootRotationOffsetR),
+                                                                                         new Vector3(character.RightFootHintPositionOffsetX, character.RightFootHintPositionOffsetY, character.RightFootHintPositionOffsetZ));
+
+                                bool[] jointCorrections = new bool[(int)BodyPart.BodyPartsCount];
+
+                                MotionOffsetsXML motionOffsetsXML = new MotionOffsetsXML(motion.MotionName, offsetVectors, jointCorrections);
+                                AnimationXML animationXML = new AnimationXML(animation.AnimationName);
+                                CharacterXML characterXML = new CharacterXML(character.CharacterName, 0);
+
+                                animationXML.AddMotionOffsets(motionOffsetsXML);
+                                characterXML.AddAnimation(animationXML);
+                                characterGroupXML.AddCharacter(characterXML);
+                            }
+
+                            hSceneOffsets.AddCharacterGroup(characterGroupXML);
+                        }
+                    }
+                }
+
+                SaveOffsetsToFile();
+
+                // Close the file
+                OffsetFile.Close();
+                File.Delete(fileName);
+            }
+            catch
+            {
+                //HS2_BetterHScenes.Logger.LogMessage("read error!");
+                return;
+            }
         }
     }
 }
