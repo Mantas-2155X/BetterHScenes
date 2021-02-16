@@ -52,7 +52,7 @@ namespace AI_BetterHScenes
             Always
         }
 
-        public const string VERSION = "2.6.1.2";
+        public const string VERSION = "2.6.1.3";
 
         public new static ManualLogSource Logger;
 
@@ -673,6 +673,9 @@ namespace AI_BetterHScenes
 
         private static void EndHScene()
         {
+            if (hScene == null)
+                return;
+
             Console.WriteLine("BetterHScenes: HScene End");
 
             if (map != null)
@@ -690,14 +693,20 @@ namespace AI_BetterHScenes
             OnHStart = false;
 
             SetAfterHBathDesire();
+            Console.WriteLine("SetAfterHBathDesire");
 
             // clear out everything that was initialized by SetStartVoice
-            foreach (var character in characters.Where(character => character != null))
+            if (characters != null)
             {
-                Expression expression = character.GetComponent<Expression>();
-                if (expression != null)
-                    Destroy(expression);
+                foreach (var character in characters.Where(character => character != null))
+                {
+                    Expression expression = character.GetComponent<Expression>();
+                    if (expression != null)
+                        Destroy(expression);
+                }
             }
+
+            Console.WriteLine("DestroyExpressions");
 
             hScene = null;
             hFlagCtrl = null;
@@ -708,14 +717,14 @@ namespace AI_BetterHScenes
             hSceneTrav = null;
             listTrav = null;
 
-            characters = null;
-            maleCharacters = null;
-            femaleCharacters = null;
-            maleMotionList = null;
+            characters = new List<ChaControl>();
+            maleCharacters = new List<ChaControl>();
+            femaleCharacters = new List<ChaControl>();
+            maleMotionList = new List<HMotionEyeNeckMale.EyeNeck>();
 
             map = null;
             sun = null;
-            collisionHelpers = null;
+            collisionHelpers = new List<SkinnedCollisionHelper>();
 
             cameraShouldLock = false;
             oldMapState = false;
