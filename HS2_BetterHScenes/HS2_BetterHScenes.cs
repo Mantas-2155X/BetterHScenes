@@ -636,9 +636,9 @@ namespace HS2_BetterHScenes
         //-- Save current motion --//
         //-- Set apply offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
-        private static void ChaControl_PostSetPlay(ChaControl __instance, string _strAnmName)
+        private static void ChaControl_PostSetPlay(string _strAnmName)
         {
-            if (__instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
+            if (hScene == null || _strAnmName.IsNullOrEmpty())
                 return;
 
             currentMotion = _strAnmName;
@@ -919,17 +919,6 @@ namespace HS2_BetterHScenes
             }
         }
 
-        private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)
-        {
-            if (lsm != LoadSceneMode.Single)
-                return;
-
-            if (scene.name == "HScene")
-                harmony.PatchAll(typeof(HS2_BetterHScenes));
-            else
-                harmony.UnpatchAll(nameof(HS2_BetterHScenes));
-        }
-
         private static void EnableJointCorrection(JointCorrection jointCorrection)
         {
             foreach (var character in characters.Where(character => character != null))
@@ -941,6 +930,17 @@ namespace HS2_BetterHScenes
                 foreach (var info in expression.info)
                     info.enable = jointCorrection == JointCorrection.Always;
             }
+        }
+
+        private static void SceneManager_sceneLoaded(Scene scene, LoadSceneMode lsm)
+        {
+            if (lsm != LoadSceneMode.Single)
+                return;
+
+            if (scene.name == "HScene")
+                harmony.PatchAll(typeof(HS2_BetterHScenes));
+            else
+                harmony.UnpatchAll(nameof(HS2_BetterHScenes));
         }
     }
 }

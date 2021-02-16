@@ -52,7 +52,7 @@ namespace AI_BetterHScenes
             Always
         }
 
-        public const string VERSION = "2.6.1";
+        public const string VERSION = "2.6.1.2";
 
         public new static ManualLogSource Logger;
 
@@ -516,6 +516,8 @@ namespace AI_BetterHScenes
         [HarmonyPostfix, HarmonyPatch(typeof(HScene), "SetStartVoice")]
         public static void HScene_SetStartVoice_Patch(HScene __instance, HSceneSprite ___sprite, HSceneManager ___hSceneManager)
         {
+            Console.WriteLine("BetterHScenes: HScene Start");
+
             hScene = __instance;
             hSprite = ___sprite;
             manager = ___hSceneManager;
@@ -612,42 +614,15 @@ namespace AI_BetterHScenes
 
             SliderUI.InitDraggersUI();
             EnableJointCorrection(jointCorrection.Value);
+
+            Console.WriteLine("BetterHScenes: HScene Started Successfully");
         }
 
-        //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
-        //-- Set bath desire after h --//
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
-        public static void HScene_EndProc_Patch()
+        private static void SetAfterHBathDesire()
         {
-            EndHScene();
-        }
-
-        //-- Some HScenes end via this path --//
-        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProcADV")]
-        public static void HScene_EndProcADV_Patch()
-        {
-            EndHScene();
-        }
-
-        private static void EndHScene()
-        {
-            if (map != null)
-                map.SetActive(oldMapState);
-
-            if (sun != null)
-                sun.shadows = oldSunShadowsState;
-
-            if (enviroSky != null)
-                enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.Simulated;
-
-            activeDraggerUI = false;
-            activeAnimationUI = false;
-
-            OnHStart = false;
-
-            if (!increaseBathDesire.Value || manager.bMerchant)
+            if (hScene == null || manager == null || manager.bMerchant || !increaseBathDesire.Value)
                 return;
-
+            
             // Prone to errors from previous versions, trying to be safe
             try
             {
@@ -674,11 +649,47 @@ namespace AI_BetterHScenes
             }
             catch (Exception ex)
             {
-                Logger.LogMessage("HScene_EndProc_Patch error!");
-                Logger.LogWarning("HScene_EndProc_Patch error!");
+                Logger.LogMessage("HScene_SetAfterHBathDesire error!");
+                Logger.LogWarning("HScene_SetAfterHBathDesire error!");
 
                 Console.WriteLine(ex);
             }
+        }
+
+        //-- Enable map, simulation after H if disabled previously, disable dragger UI --//
+        //-- Set bath desire after h --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProc")]
+        public static void HScene_EndProc_Patch()
+        {
+            EndHScene();
+        }
+
+        //-- Some HScenes end via this path --//
+        [HarmonyPostfix, HarmonyPatch(typeof(HScene), "EndProcADV")]
+        public static void HScene_EndProcADV_Patch()
+        {
+            EndHScene();
+        }
+
+        private static void EndHScene()
+        {
+            Console.WriteLine("BetterHScenes: HScene End");
+
+            if (map != null)
+                map.SetActive(oldMapState);
+
+            if (sun != null)
+                sun.shadows = oldSunShadowsState;
+
+            if (enviroSky != null)
+                enviroSky.GameTime.ProgressTime = EnviroTime.TimeProgressMode.Simulated;
+
+            activeDraggerUI = false;
+            activeAnimationUI = false;
+
+            OnHStart = false;
+
+            SetAfterHBathDesire();
 
             // clear out everything that was initialized by SetStartVoice
             foreach (var character in characters.Where(character => character != null))
@@ -718,6 +729,8 @@ namespace AI_BetterHScenes
             bFootJobException = false;
             bTwoFootException = false;
             useReplacements = false;
+
+            Console.WriteLine("BetterHScenes: HScene Ended Successfully");
         }
 
         //-- Strip on start of H scene --//
@@ -869,9 +882,9 @@ namespace AI_BetterHScenes
         //-- Save current motion --//
         //-- Set apply offsets --//
         [HarmonyPostfix, HarmonyPatch(typeof(ChaControl), "setPlay")]
-        private static void ChaControl_PostSetPlay(ChaControl __instance, string _strAnmName)
+        private static void ChaControl_PostSetPlay(string _strAnmName)
         {
-            if (__instance == null || _strAnmName.IsNullOrEmpty() || currentMotion == _strAnmName)
+            if (hScene == null || _strAnmName.IsNullOrEmpty())
                 return;
 
             currentMotion = _strAnmName;
@@ -881,10 +894,7 @@ namespace AI_BetterHScenes
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
             applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(hScene.ctrlFlag.nowAnimationInfo.fileFemale) && !bIdleAfterMotion;
 
-            if (useOneOffsetForAllMotions.Value)
-                return;
-
-            if (applySavedOffsets.Value)
+            if (applySavedOffsets.Value && !useOneOffsetForAllMotions.Value)
                 shouldApplyOffsets = true;
         }
 
@@ -1120,7 +1130,6 @@ namespace AI_BetterHScenes
                     info.enable = jointCorrection == JointCorrection.Always;
             }
         }
-
 
         private static void HScene_sceneLoaded(bool loaded)
         {
