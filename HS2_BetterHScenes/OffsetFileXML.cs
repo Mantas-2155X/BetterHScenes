@@ -314,10 +314,10 @@ namespace HS2_BetterHScenes
         public bool ShouldSerializeRightFootHintPositionOffsetY() => RightFootHintPositionOffsetY != 0.0;
         public bool ShouldSerializeRightFootHintPositionOffsetZ() => RightFootHintPositionOffsetZ != 0.0;
 
-        public bool ShouldSerializeLeftHandJointCorrection() => LeftHandJointCorrection == true;
-        public bool ShouldSerializeRightHandJointCorrection() => RightHandJointCorrection == true;
-        public bool ShouldSerializeLeftFootJointCorrection() => LeftFootJointCorrection == true;
-        public bool ShouldSerializeRightFootJointCorrection() => RightFootJointCorrection == true;
+        public bool ShouldSerializeLeftHandJointCorrection() => LeftHandJointCorrection != HS2_BetterHScenes.defaultJointCorrection.Value;
+        public bool ShouldSerializeRightHandJointCorrection() => RightHandJointCorrection != HS2_BetterHScenes.defaultJointCorrection.Value;
+        public bool ShouldSerializeLeftFootJointCorrection() => LeftFootJointCorrection != HS2_BetterHScenes.defaultJointCorrection.Value;
+        public bool ShouldSerializeRightFootJointCorrection() => RightFootJointCorrection != HS2_BetterHScenes.defaultJointCorrection.Value;
 
         public MotionOffsetsXML() { }
 

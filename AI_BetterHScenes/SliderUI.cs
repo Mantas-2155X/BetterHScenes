@@ -205,7 +205,10 @@ namespace AI_BetterHScenes
             {
                 selectedCharacter = GUILayout.SelectionGrid(selectedCharacter, characterNames, AI_BetterHScenes.characters.Count, gridStyle, GUILayout.Height(30));
                 GUILayout.Box(GUIContent.none, lineStyle, GUILayout.ExpandWidth(true), GUILayout.Height(1f));
-                selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
+                using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
+                {
+                    selectedOffset = GUILayout.SelectionGrid(selectedOffset, offsetNames, offsetNames.Length, gridStyle, GUILayout.Height(30));
+                }
                 using (GUILayout.HorizontalScope linkScope = new GUILayout.HorizontalScope("box"))
                 {
                     if (selectedOffset == (int)BodyPart.WholeBody)
@@ -215,14 +218,30 @@ namespace AI_BetterHScenes
                     }
                     else
                     {
-                        bool lastCorrection = characterOffsets[selectedCharacter].jointCorrection[selectedOffset];
-                        characterOffsets[selectedCharacter].jointCorrection[selectedOffset] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[selectedOffset], "Joint Correction", GUILayout.Width((uiWidth / 5) - 10));
-
-                        if (lastCorrection != characterOffsets[selectedCharacter].jointCorrection[selectedOffset])
-                            characterOffsets[selectedCharacter].ApplyJointCorrections();
-
-                        if (GUILayout.Button("Mirror Active Limb"))
+                        if (GUILayout.Button("Mirror Limb"))
                             MirrorActiveLimb();
+
+                        bool[] lastCorrection = new bool[(int)BodyPart.BodyPartsCount];
+                        for (var part = (int)BodyPart.LeftHand; part < (int)BodyPart.BodyPartsCount; part++)
+                            lastCorrection[part] = characterOffsets[selectedCharacter].jointCorrection[part];
+
+                        characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.LeftHand] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.LeftHand], " Correction");
+                        characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.RightHand] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.RightHand], " Correction");
+                        characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.LeftFoot] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.LeftFoot], " Correction");
+                        characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.RightFoot] = GUILayout.Toggle(characterOffsets[selectedCharacter].jointCorrection[(int)BodyPart.RightFoot], " Correction");
+
+                        bool correctionChanged = false;
+                        for (var part = (int)BodyPart.LeftHand; part < (int)BodyPart.BodyPartsCount; part++)
+                        {
+                            if (lastCorrection[part] == characterOffsets[selectedCharacter].jointCorrection[part])
+                                continue;
+
+                            correctionChanged = true;
+                            break;
+                        }
+
+                        if (correctionChanged)
+                            characterOffsets[selectedCharacter].ApplyJointCorrections();
                     }
                 }
 
