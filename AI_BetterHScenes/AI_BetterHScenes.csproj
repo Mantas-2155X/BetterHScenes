@@ -19,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\Program Files %28x86%29\AI-Shoujo\BepInEx\Plugins\2155X\</OutputPath>
+    <OutputPath>../_bin/AI/BepInEx/plugins/2155X/</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -46,8 +46,9 @@
       <HintPath>..\packages\IllusionLibs.AIGirl.Assembly-CSharp-firstpass.2020.5.29.2\lib\net46\Assembly-CSharp-firstpass.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="BehaviorDesigner.Runtime">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\AI-Shoujo\StudioNEOV2_Data\Managed\BehaviorDesigner.Runtime.dll</HintPath>
+    <Reference Include="BehaviorDesigner.Runtime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\libs\Game\AI\BehaviorDesigner.Runtime.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx, Version=5.3.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.BepInEx.5.3.0\lib\net35\BepInEx.dll</HintPath>
