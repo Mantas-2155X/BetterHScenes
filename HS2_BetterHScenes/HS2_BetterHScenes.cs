@@ -51,7 +51,7 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.6.2";
+        public const string VERSION = "2.6.2.1";
 
         public new static ManualLogSource Logger;
 
@@ -94,7 +94,7 @@ namespace HS2_BetterHScenes
         private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> rightKosiReplaceList = new List<string>() { "aia_f_09" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
-        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12"};
+        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12", "h2a_f_00" };
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
@@ -634,9 +634,10 @@ namespace HS2_BetterHScenes
             currentMotion = _strAnmName;
 
             bool bIdleAfterMotion = currentMotion.Contains("Idle") || currentMotion.Contains("_A");
+            string animationFile = hScene?.ctrlFlag?.nowAnimationInfo?.fileFemale;
 
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
-            applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(hScene.ctrlFlag.nowAnimationInfo.fileFemale) && !bIdleAfterMotion;
+            applyKissOffset = kissCorrection.Value && !bIdleAfterMotion && !animationFile.IsNullOrEmpty() && kissCorrectionList.Contains(animationFile);
 
             if (applySavedOffsets.Value && !useOneOffsetForAllMotions.Value)
                 shouldApplyOffsets = true;
