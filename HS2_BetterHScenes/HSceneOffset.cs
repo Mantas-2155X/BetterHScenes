@@ -10,10 +10,14 @@ namespace HS2_BetterHScenes
 {
     public static class HSceneOffset
     {
+        public const string GlobalGroupName = "__GLOBAL_GROUP__";
+        public const string PCNameFormat = "__PC{0}__";
+        public const string NPCNameFormat = "__NPC{0}__";
+
         private static BetterHScenesOffsetsXML hSceneOffsets;
 
         //-- Apply character offsets for current animation, if they can be found --//
-        public static void ApplyCharacterOffsets()
+        public static void ApplyCharacterOffsets(bool isGlobalGroup)
         {
             var currentAnimation = HS2_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
             var bValidOffsetsFound = false;
@@ -25,12 +29,19 @@ namespace HS2_BetterHScenes
                 HS2_BetterHScenes.currentMotion = "default";
 
             string characterGroupName = null;
-            foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
+            if (isGlobalGroup)
             {
-                if (characterGroupName == null)
-                    characterGroupName = character.fileParam.fullname;
-                else
-                    characterGroupName += "_" + character.fileParam.fullname;
+                characterGroupName = GlobalGroupName;
+            }
+            else
+            {
+                foreach (var character in HS2_BetterHScenes.characters.Where(character => character != null && character.visibleAll))
+                {
+                    if (characterGroupName == null)
+                        characterGroupName = character.fileParam.fullname;
+                    else
+                        characterGroupName += "_" + character.fileParam.fullname;
+                }
             }
 
             if (characterGroupName != null)
@@ -38,9 +49,29 @@ namespace HS2_BetterHScenes
                 var characterGroup = hSceneOffsets.CharacterGroupList.Find(x => x.CharacterGroupName == characterGroupName);
                 if (characterGroup != null)
                 {
+                    // Indexing the character whether PC or Non-PC for global group.
+                    // NOTE: Maybe this will not work properly if there are multiple NPCs.
+                    int pcIndex = 0, npcIndex = 0;
                     for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
                     {
-                        var character = characterGroup.CharacterList.Find(x => x.CharacterName == HS2_BetterHScenes.characters[charIndex].fileParam.fullname);
+                        AIChara.ChaControl destChar = HS2_BetterHScenes.characters[charIndex];
+                        string searchCharName;
+                        if (isGlobalGroup)
+                        {
+                            if (destChar.isPlayer)
+                            {
+                                searchCharName = string.Format(PCNameFormat, pcIndex++);
+                            }
+                            else
+                            {
+                                searchCharName = string.Format(NPCNameFormat, npcIndex++);
+                            }
+                        }
+                        else
+                        {
+                            searchCharName = destChar.fileParam.fullname;
+                        }
+                        var character = characterGroup.CharacterList.Find(x => x.CharacterName == searchCharName);
                         if (character == null)
                             continue;
 
@@ -95,7 +126,7 @@ namespace HS2_BetterHScenes
         }
 
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
-        public static void SaveCharacterGroupOffsets(List<string> characterNames, List<OffsetVectors[]> offsetVectorList, List<bool[]> jointCorrectionList, List<float> shoeOffsets, bool isDefault = false)
+        public static void SaveCharacterGroupOffsets(List<string> characterNames, List<OffsetVectors[]> offsetVectorList, List<bool[]> jointCorrectionList, List<float> shoeOffsets, bool isGlobalGroup, bool isDefaultMotion)
         {
             if (characterNames.IsNullOrEmpty() || offsetVectorList.IsNullOrEmpty() || shoeOffsets.IsNullOrEmpty())
                 return;
@@ -105,29 +136,55 @@ namespace HS2_BetterHScenes
                 return;
 
             var currentMotion = HS2_BetterHScenes.currentMotion;
-            if (isDefault)
+            if (isDefaultMotion)
                 currentMotion = "default";
 
             string characterGroupName = null;
-            foreach (var name in characterNames)
+            if (isGlobalGroup)
             {
-                if (characterGroupName == null)
-                    characterGroupName = name;
-                else
-                    characterGroupName += "_" + name;
+                characterGroupName = GlobalGroupName;
+            }
+            else
+            {
+                foreach (var name in characterNames)
+                {
+                    if (characterGroupName == null)
+                        characterGroupName = name;
+                    else
+                        characterGroupName += "_" + name;
+                }
             }
 
             HS2_BetterHScenes.Logger.LogMessage("Saving Offsets for " + currentAnimation + " Motion " + currentMotion + " for characters " + characterGroupName);
 
             var characterGroup = new CharacterGroupXML(characterGroupName);
 
+            // See 'ApplyCharacterOffsets()'
+            int pcIndex = 0, npcIndex = 0;
             for (var charIndex = 0; charIndex < characterNames.Count; charIndex++)
             {
                 var motionOffsets = new MotionOffsetsXML(currentMotion, offsetVectorList[charIndex], jointCorrectionList[charIndex]);
                 var animation = new AnimationXML(currentAnimation);
                 animation.AddMotionOffsets(motionOffsets);
 
-                var character = new CharacterXML(characterNames[charIndex], shoeOffsets[charIndex]);
+                AIChara.ChaControl destChar = HS2_BetterHScenes.characters[charIndex];
+                string charName;
+                if (isGlobalGroup)
+                {
+                    if (destChar.isPlayer)
+                    {
+                        charName = string.Format(PCNameFormat, pcIndex++);
+                    }
+                    else
+                    {
+                        charName = string.Format(NPCNameFormat, npcIndex++);
+                    }
+                }
+                else
+                {
+                    charName = characterNames[charIndex];
+                }
+                var character = new CharacterXML(charName, shoeOffsets[charIndex]);
                 character.AddAnimation(animation);
 
                 characterGroup.AddCharacter(character);
@@ -196,7 +253,7 @@ namespace HS2_BetterHScenes
         }
 
         private static void ConvertLegacyFile()
-        {          
+        {
             hSceneOffsets = new BetterHScenesOffsetsXML();
 
             Stream OffsetFile;
@@ -209,9 +266,9 @@ namespace HS2_BetterHScenes
                 var serializer = new XmlSerializer(typeof(AnimationOffsets));
                 var animationOffsets = (AnimationOffsets)serializer.Deserialize(OffsetFile);
 
-                foreach(var animation in animationOffsets.Animations)
+                foreach (var animation in animationOffsets.Animations)
                 {
-                    foreach(var motion in animation.MotionList)
+                    foreach (var motion in animation.MotionList)
                     {
                         foreach (var characterPair in motion.CharacterPairList)
                         {

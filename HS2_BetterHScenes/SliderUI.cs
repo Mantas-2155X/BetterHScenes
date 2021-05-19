@@ -86,7 +86,7 @@ namespace HS2_BetterHScenes
             characterOffsets[charIndex].offsetTransforms[(int)BodyPart.WholeBody].localEulerAngles = rotation;
         }
 
-        private static void SavePosition(bool bAsDefault = false)
+        private static void SavePosition(bool isGlobalGroup, bool isDefaultMotion)
         {
             List<string> characterNames = new List<string>();
             List<OffsetVectors[]> offsetsList = new List<OffsetVectors[]>();
@@ -104,7 +104,7 @@ namespace HS2_BetterHScenes
                 shoeOffsetList.Add(shoeOffsets[charIndex]);
             }
 
-            HSceneOffset.SaveCharacterGroupOffsets(characterNames, offsetsList, jointCorrectionsList, shoeOffsetList, bAsDefault);
+            HSceneOffset.SaveCharacterGroupOffsets(characterNames, offsetsList, jointCorrectionsList, shoeOffsetList, isGlobalGroup, isDefaultMotion);
         }
 
         private static void CopyPositions()
@@ -396,13 +396,13 @@ namespace HS2_BetterHScenes
                         ResetPositions();
 
                     if (GUILayout.Button("Reload"))
-                        HSceneOffset.ApplyCharacterOffsets();
+                        HSceneOffset.ApplyCharacterOffsets(HS2_BetterHScenes.useGlobalGroupForAllGroups.Value);
 
                     if (GUILayout.Button("Save This"))
-                        SavePosition(HS2_BetterHScenes.useOneOffsetForAllMotions.Value);
+                        SavePosition(HS2_BetterHScenes.useGlobalGroupForAllGroups.Value, HS2_BetterHScenes.useOneOffsetForAllMotions.Value);
 
                     if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
-                        SavePosition(true);
+                        SavePosition(false, true);
                 }
             }
 
