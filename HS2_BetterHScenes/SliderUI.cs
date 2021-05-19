@@ -86,25 +86,26 @@ namespace HS2_BetterHScenes
             characterOffsets[charIndex].offsetTransforms[(int)BodyPart.WholeBody].localEulerAngles = rotation;
         }
 
-        private static void SavePosition(bool bAsDefault = false)
+        private static void SavePosition(bool isGlobalGroup, bool isDefaultMotion)
         {
-            List<string> characterNames = new List<string>();
+            List<AIChara.ChaControl> destChars = new List<AIChara.ChaControl>();
             List<OffsetVectors[]> offsetsList = new List<OffsetVectors[]>();
             List<float> shoeOffsetList = new List<float>();
             List<bool[]> jointCorrectionsList = new List<bool[]>();
 
             for (var charIndex = 0; charIndex < HS2_BetterHScenes.characters.Count; charIndex++)
             {
-                if (!HS2_BetterHScenes.characters[charIndex].visibleAll)
+                AIChara.ChaControl destChar = HS2_BetterHScenes.characters[charIndex];
+                if (!destChar.visibleAll)
                     continue;
 
-                characterNames.Add(HS2_BetterHScenes.characters[charIndex].fileParam.fullname);
+                destChars.Add(destChar);
                 offsetsList.Add(characterOffsets[charIndex].offsetVectors);
                 jointCorrectionsList.Add(characterOffsets[charIndex].jointCorrection);
                 shoeOffsetList.Add(shoeOffsets[charIndex]);
             }
 
-            HSceneOffset.SaveCharacterGroupOffsets(characterNames, offsetsList, jointCorrectionsList, shoeOffsetList, bAsDefault);
+            HSceneOffset.SaveCharacterGroupOffsets(destChars, offsetsList, jointCorrectionsList, shoeOffsetList, isGlobalGroup, isDefaultMotion);
         }
 
         private static void CopyPositions()
@@ -396,13 +397,13 @@ namespace HS2_BetterHScenes
                         ResetPositions();
 
                     if (GUILayout.Button("Reload"))
-                        HSceneOffset.ApplyCharacterOffsets();
+                        HSceneOffset.ApplyCharacterOffsets(HS2_BetterHScenes.useGlobalGroupForAllGroups.Value);
 
                     if (GUILayout.Button("Save This"))
-                        SavePosition(HS2_BetterHScenes.useOneOffsetForAllMotions.Value);
+                        SavePosition(HS2_BetterHScenes.useGlobalGroupForAllGroups.Value, HS2_BetterHScenes.useOneOffsetForAllMotions.Value);
 
                     if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
-                        SavePosition(true);
+                        SavePosition(false, true);
                 }
             }
 
