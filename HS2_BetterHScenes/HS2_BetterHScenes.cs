@@ -94,12 +94,13 @@ namespace HS2_BetterHScenes
         private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> rightKosiReplaceList = new List<string>() { "aia_f_09" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
-        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12"};
+        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12" };
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         private static ConfigEntry<KeyboardShortcut> showAnimationUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
+        public static ConfigEntry<bool> useGlobalGroupForAllGroups { get; private set; }
         public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
         public static ConfigEntry<string> offsetFile { get; private set; }
         public static ConfigEntry<string> offsetFileV2 { get; private set; }
@@ -173,6 +174,7 @@ namespace HS2_BetterHScenes
                 if (applySavedOffsets.Value)
                     shouldApplyOffsets = true;
             };
+            useGlobalGroupForAllGroups = Config.Bind("Animations > Draggers", "Use global group for all groups", false, new ConfigDescription($"If enabled, using special group what is called {HSceneOffset.GlobalGroupName} data for all groups and save current group data to the special group."));
             useOneOffsetForAllMotions = Config.Bind("Animations > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
             offsetFile = Config.Bind("Animations > Draggers", "Legacy Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the legacy offset file card on disk, will be converted to new offset file on startup."));
             offsetFileV2 = Config.Bind("Animations > Draggers", "Offset File Path V2", "UserData/BetterHScenesOffsetsV2.xml", new ConfigDescription("Path of the offset file card on disk."));
@@ -292,7 +294,7 @@ namespace HS2_BetterHScenes
 
             if (shouldApplyOffsets && !hScene.NowChangeAnim)
             {
-                HSceneOffset.ApplyCharacterOffsets();
+                HSceneOffset.ApplyCharacterOffsets(useGlobalGroupForAllGroups.Value);
                 SliderUI.UpdateDependentStatus();
                 FixMotionList(hScene.ctrlFlag.nowAnimationInfo.fileFemale);
                 FixEffectors();
@@ -638,7 +640,7 @@ namespace HS2_BetterHScenes
             useReplacements = bBaseReplacement && !bFootJobException && (!bIdleAfterException || !bIdleAfterMotion);
             applyKissOffset = kissCorrection.Value && kissCorrectionList.Contains(hScene.ctrlFlag.nowAnimationInfo.fileFemale) && !bIdleAfterMotion;
 
-            if (applySavedOffsets.Value && !useOneOffsetForAllMotions.Value)
+            if (applySavedOffsets.Value && (!useOneOffsetForAllMotions.Value || !useGlobalGroupForAllGroups.Value))
                 shouldApplyOffsets = true;
         }
 
