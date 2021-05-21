@@ -45,7 +45,7 @@ namespace AI_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.6.2.1";
+        public const string VERSION = "2.6.3";
 
         public new static ManualLogSource Logger;
 

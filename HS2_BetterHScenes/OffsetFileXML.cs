@@ -378,7 +378,7 @@ namespace HS2_BetterHScenes
             LeftHandJointCorrection = jointCorrections[(int)BodyPart.LeftHand];
             RightHandJointCorrection = jointCorrections[(int)BodyPart.RightHand];
             LeftFootJointCorrection = jointCorrections[(int)BodyPart.LeftFoot];
-            RightFootJointCorrection = jointCorrections[(int)BodyPart.LeftHand];
+            RightFootJointCorrection = jointCorrections[(int)BodyPart.RightFoot];
         }
     }
 
