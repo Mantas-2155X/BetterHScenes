@@ -45,7 +45,7 @@ namespace AI_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.6.3";
+        public const string VERSION = "2.6.4";
 
         public new static ManualLogSource Logger;
 
@@ -73,8 +73,9 @@ namespace AI_BetterHScenes
         private static List<SkinnedCollisionHelper> collisionHelpers;
 
         private static bool OnHStart;
-        private static bool activeDraggerUI;
-        private static bool activeAnimationUI;
+        internal static bool activeDraggerUI;
+        internal static bool activeAnimationUI;
+		internal static bool activeConfirmDeleteUI;
         private static bool patched;
 
         private static bool cameraShouldLock;
@@ -100,13 +101,14 @@ namespace AI_BetterHScenes
         private static readonly List<string> leftKokanReplaceList = new List<string>() { "aia_f_15", "aia_f_20" };
         private static readonly List<string> rightKosiReplaceList = new List<string>() { "aia_f_09" };
         private static readonly List<string> leftKosiReplaceList = new List<string>() { "aia_f_16" };
-        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12", "h2a_f_00"};
+        private static readonly List<string> kissCorrectionList = new List<string>() { "aia_f_00", "aia_f_01", "aia_f_07", "aia_f_11", "aia_f_12", "h2a_f_00" };
 
         //-- Draggers --//
         private static ConfigEntry<KeyboardShortcut> showDraggerUI { get; set; }
         private static ConfigEntry<KeyboardShortcut> showAnimationUI { get; set; }
         private static ConfigEntry<bool> applySavedOffsets { get; set; }
         public static ConfigEntry<bool> useOneOffsetForAllMotions { get; private set; }
+        public static ConfigEntry<bool> useUniqueOffsetForWeak { get; private set; }
         public static ConfigEntry<string> offsetFile { get; private set; }
         public static ConfigEntry<string> offsetFileV2 { get; private set; }
         public static ConfigEntry<float> sliderMaxBodyPosition { get; private set; }
@@ -188,6 +190,7 @@ namespace AI_BetterHScenes
                     shouldApplyOffsets = true;
             };
             useOneOffsetForAllMotions = Config.Bind("Animations > Draggers", "Use one offset for all motions", true, new ConfigDescription("If disabled, the Save button in the UI will only save the offsets for the current motion of the position.  A Default button will be added to save it for all motions of that position that don't already have an offset."));
+            useUniqueOffsetForWeak = Config.Bind("Animations > Draggers", "Use unique default offset for weak motions", true, new ConfigDescription("If enabled, saving a default motion will save unique offsets for the current state the girl is in, either normal or weakness. This lets you save two separate default offsets, one for normal state and one for weakness."));
             offsetFile = Config.Bind("Animations > Draggers", "Legacy Offset File Path", "UserData/BetterHScenesOffsets.xml", new ConfigDescription("Path of the legacy offset file card on disk, will be converted to new offset file on startup."));
             offsetFileV2 = Config.Bind("Animations > Draggers", "Offset File Path V2", "UserData/BetterHScenesOffsetsV2.xml", new ConfigDescription("Path of the offset file card on disk."));
             sliderMaxBodyPosition = Config.Bind("Animations > Draggers", "Body Slider min/max position", 2.5f, new ConfigDescription("Maximum limits of the body position slider bars."));
@@ -332,6 +335,9 @@ namespace AI_BetterHScenes
 
             if (activeAnimationUI && hScene != null)
                 AnimationUI.DrawAnimationUI();
+
+            if (activeConfirmDeleteUI && hScene != null)
+                SliderUI.DrawConfirmDeleteUI();
         }
 
         //-- Patch & unpatch cause illusion don't do scenemanager anymore --//

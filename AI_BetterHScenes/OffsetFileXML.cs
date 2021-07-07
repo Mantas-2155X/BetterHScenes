@@ -23,6 +23,16 @@ namespace AI_BetterHScenes
                 CharacterGroupList.Add(characterGroup);
             }
         }
+
+        public void DeleteCharacterGroupAnimation(CharacterGroupXML characterGroup, AnimationXML animation)
+        {
+            var existingCharacterGroup = CharacterGroupList.Find(x => x.CharacterGroupName == characterGroup.CharacterGroupName);
+            if (existingCharacterGroup != null)
+            {
+                foreach (var character in characterGroup.CharacterList)
+                    existingCharacterGroup.DeleteCharacterAnimation(character, animation);
+            }
+        }
     }
 
     [XmlType("CharacterGroupXML")] // define Type
@@ -56,6 +66,13 @@ namespace AI_BetterHScenes
             {
                 CharacterList.Add(character);
             }
+        }
+
+        public void DeleteCharacterAnimation(CharacterXML character, AnimationXML animation)
+        {
+            var existingCharacter = CharacterList.Find(x => x.CharacterName == character.CharacterName);
+            if (existingCharacter != null)
+                existingCharacter.DeleteAnimation(animation);
         }
     }
 
@@ -94,6 +111,13 @@ namespace AI_BetterHScenes
             {
                 AnimationList.Add(animation);
             }
+        }
+
+        public void DeleteAnimation(AnimationXML animation)
+        {
+            var existingAnimation = AnimationList.Find(x => x.AnimationName == animation.AnimationName);
+            if (existingAnimation != null)
+                AnimationList.Remove(existingAnimation);
         }
     }
 

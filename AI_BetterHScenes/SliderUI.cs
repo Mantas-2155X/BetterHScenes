@@ -10,7 +10,10 @@ namespace AI_BetterHScenes
     {
         private const int uiWidth = 600;
         private const int uiHeight = 256;
+        private const int uiDeleteWidth = uiWidth / 2;
+        private const int uiDeleteHeight = uiHeight / 4;
         private static Rect window = new Rect(0, 0, uiWidth, uiHeight);
+        private static Rect deleteWindow = new Rect(0, 0, uiDeleteWidth, uiDeleteHeight);
 
         public static int selectedCharacter = 0;
         public static int selectedOffset = 0;
@@ -145,6 +148,23 @@ namespace AI_BetterHScenes
             }
 
             ApplyPositionsAndCorrections();
+        }
+
+        private static void DeleteCurrentPositionOffsets()
+        {
+            List<string> characterNames = new List<string>();
+
+            for (var charIndex = 0; charIndex < AI_BetterHScenes.characters.Count; charIndex++)
+            {
+                if (!AI_BetterHScenes.characters[charIndex].visibleAll)
+                    continue;
+
+                characterNames.Add(AI_BetterHScenes.characters[charIndex].fileParam.fullname);
+            }
+
+            HSceneOffset.DeleteCharacterGroupOffsets(characterNames);
+
+            ResetPositions();
         }
 
         public static void ApplyPositionsAndCorrections()
@@ -398,11 +418,61 @@ namespace AI_BetterHScenes
                     if (GUILayout.Button("Reload"))
                         HSceneOffset.ApplyCharacterOffsets();
 
-                    if (GUILayout.Button("Save This"))
-                        SavePosition(AI_BetterHScenes.useOneOffsetForAllMotions.Value);
+                    if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save This"))
+                        SavePosition(false);
 
-                    if (AI_BetterHScenes.useOneOffsetForAllMotions.Value == false && GUILayout.Button("Save Default"))
+                    if (GUILayout.Button(AI_BetterHScenes.useUniqueOffsetForWeak.Value && AI_BetterHScenes.currentMotion.StartsWith("D_") ? "Save Weak" : "Save Default"))
                         SavePosition(true);
+
+                    if (GUILayout.Button("Delete All"))
+                        AI_BetterHScenes.activeConfirmDeleteUI = true;
+                }
+            }
+
+            GUI.DragWindow();
+        }
+
+        private static void DrawConfirmDeleteWindow(int id)
+        {
+            GUIStyle lineStyle = new GUIStyle("box");
+            lineStyle.border.top = lineStyle.border.bottom = 1;
+            lineStyle.margin.top = lineStyle.margin.bottom = 1;
+            lineStyle.padding.top = lineStyle.padding.bottom = 1;
+
+            GUIStyle gridStyle = new GUIStyle("Button");
+            gridStyle.onNormal.background = Texture2D.whiteTexture;
+            gridStyle.onNormal.textColor = Color.black;
+            gridStyle.onHover.background = Texture2D.whiteTexture;
+            gridStyle.onHover.textColor = Color.black;
+            gridStyle.onActive.background = Texture2D.whiteTexture;
+            gridStyle.onActive.textColor = Color.black;
+
+            using (GUILayout.VerticalScope guiVerticalScope = new GUILayout.VerticalScope("box"))
+            {
+                using (GUILayout.HorizontalScope horizontalScopeZ = new GUILayout.HorizontalScope())
+                {
+                    GUILayout.Label("This will delete all saved offsets for all animations for this position.  Are you certain?", new GUILayoutOption(GUILayoutOption.Type.alignMiddle, true));
+                }
+
+                using (GUILayout.HorizontalScope horizontalScopeZ = new GUILayout.HorizontalScope())
+                {
+
+                    GUILayout.FlexibleSpace();
+
+                    if (GUILayout.Button("Yes", GUILayout.MaxWidth(uiWidth / 12)))
+                    {
+                        DeleteCurrentPositionOffsets();
+                        AI_BetterHScenes.activeConfirmDeleteUI = false;
+                    }
+
+                    GUILayout.FlexibleSpace();
+
+                    if (GUILayout.Button("Cancel", GUILayout.MaxWidth(uiWidth / 12)))
+                    {
+                        AI_BetterHScenes.activeConfirmDeleteUI = false;
+                    }
+
+                    GUILayout.FlexibleSpace();
                 }
             }
 
@@ -462,5 +532,11 @@ namespace AI_BetterHScenes
         }
 
         public static void DrawDraggersUI() => window = GUILayout.Window(789456123, window, DrawWindow, "Character Dragger UI", GUILayout.Width(uiWidth), GUILayout.Height(uiHeight));
+
+        public static void DrawConfirmDeleteUI()
+        {
+            deleteWindow = new Rect(window.x + (window.width - uiDeleteWidth) / 2, window.y + window.height, uiDeleteWidth, uiDeleteHeight);
+            deleteWindow = GUILayout.Window(789456125, deleteWindow, DrawConfirmDeleteWindow, "Offset Delete Confirmation", GUILayout.Width(uiDeleteWidth), GUILayout.Height(uiDeleteHeight));
+        }
     }
 }

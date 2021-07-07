@@ -50,7 +50,12 @@ namespace HS2_BetterHScenes
 
                         var motion = animation.MotionOffsetList.Find(x => x.MotionName == HS2_BetterHScenes.currentMotion);
                         if (HS2_BetterHScenes.useOneOffsetForAllMotions.Value || motion == null || motion.MotionName != HS2_BetterHScenes.currentMotion)
-                            motion = animation.MotionOffsetList.Find(x => x.MotionName == "default");
+                        {
+                            if (HS2_BetterHScenes.useUniqueOffsetForWeak.Value && HS2_BetterHScenes.currentMotion.StartsWith("D_"))
+                                motion = animation.MotionOffsetList.Find(x => x.MotionName == "defaultWeak");
+                            else
+                                motion = animation.MotionOffsetList.Find(x => x.MotionName == "default");
+                        }
 
                         if (motion == null)
                             continue;
@@ -106,7 +111,12 @@ namespace HS2_BetterHScenes
 
             var currentMotion = HS2_BetterHScenes.currentMotion;
             if (isDefault)
-                currentMotion = "default";
+            {
+                if (HS2_BetterHScenes.useUniqueOffsetForWeak.Value && HS2_BetterHScenes.currentMotion.StartsWith("D_"))
+                    currentMotion = "defaultWeak";
+                else
+                    currentMotion = "default";
+            }
 
             string characterGroupName = null;
             foreach (var name in characterNames)
@@ -134,6 +144,37 @@ namespace HS2_BetterHScenes
             }
 
             hSceneOffsets.AddCharacterGroup(characterGroup);
+            SaveOffsetsToFile();
+        }
+
+        //-- Delete the character pair of offsets in the xml file --//
+        public static void DeleteCharacterGroupOffsets(List<string> characterNames)
+        {
+            if (characterNames.IsNullOrEmpty())
+                return;
+
+            var currentAnimation = HS2_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
+            if (currentAnimation == null)
+                return;
+
+            string characterGroupName = null;
+            foreach (var name in characterNames)
+            {
+                if (characterGroupName == null)
+                    characterGroupName = name;
+                else
+                    characterGroupName += "_" + name;
+            }
+
+            HS2_BetterHScenes.Logger.LogMessage("Deleting Offsets for " + currentAnimation + " for characters " + characterGroupName);
+
+            var characterGroup = new CharacterGroupXML(characterGroupName);
+
+            foreach (var name in characterNames)
+                characterGroup.AddCharacter(new CharacterXML(name));
+
+            var animation = new AnimationXML(currentAnimation);
+            hSceneOffsets.DeleteCharacterGroupAnimation(characterGroup, animation);
             SaveOffsetsToFile();
         }
 
