@@ -45,7 +45,7 @@ namespace AI_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.6.4";
+        public const string VERSION = "2.6.5";
 
         public new static ManualLogSource Logger;
 
@@ -75,7 +75,7 @@ namespace AI_BetterHScenes
         private static bool OnHStart;
         internal static bool activeDraggerUI;
         internal static bool activeAnimationUI;
-		internal static bool activeConfirmDeleteUI;
+        internal static bool activeConfirmDeleteUI;
         private static bool patched;
 
         private static bool cameraShouldLock;
@@ -439,6 +439,28 @@ namespace AI_BetterHScenes
                         break;
                 }
             }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(FaceBlendShape), "OnLateUpdate")]
+        public static void FaceBlendShape_OnLateUpdate(FaceBlendShape __instance)
+        {
+            if (hScene == null || shouldApplyOffsets)
+                return;
+
+            ChaControl character = __instance.GetComponentInParent<ChaControl>();
+
+            if (character == null)
+                return;
+
+            int characterIndex = 0;
+            if (!character.isPlayer)
+            {
+                characterIndex = 1;
+                if (femaleCharacters.Count > 1 && femaleCharacters[1] != null && character.loadNo == femaleCharacters[1].loadNo)
+                    characterIndex = 2;
+            }
+
+            SliderUI.ApplyMouthOffset(characterIndex, __instance.MouthCtrl);
         }
 
         //-- IK Solver Patch --//
@@ -983,6 +1005,21 @@ namespace AI_BetterHScenes
 
                 if (ctrlItem != null)
                     ctrlItem.setPlay(playAnimation);
+            }
+        }
+
+        public static void PlayAnimations(int play)
+        {
+            foreach (var character in characters.Where(character => character != null))
+            {
+                if (!character.visibleAll)
+                    continue;
+
+                var animator = character.animBody;
+                if (animator == null)
+                    continue;
+
+                animator.speed = play;
             }
         }
 

@@ -51,7 +51,7 @@ namespace HS2_BetterHScenes
             RightFoot = 8
         }
 
-        public const string VERSION = "2.6.4";
+        public const string VERSION = "2.6.5";
 
         public new static ManualLogSource Logger;
 
@@ -376,6 +376,26 @@ namespace HS2_BetterHScenes
                         break;
                 }
             }
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(FaceBlendShape), "OnLateUpdate")]
+        public static void FaceBlendShape_OnLateUpdate(FaceBlendShape __instance)
+        {
+            if (hScene == null || shouldApplyOffsets)
+                return;
+
+            ChaControl character = __instance.GetComponentInParent<ChaControl>();
+
+            if (character == null)
+                return;
+
+            int charIndex = 1;
+            if (character.chaID == (int)ChaID.FirstFemale || character.chaID == (int)ChaID.SecondFemale)
+                charIndex = maleCharacters.Count + character.chaID;
+            else if (character.chaID == (int)ChaID.FirstMale)
+                charIndex = 0;
+
+            SliderUI.ApplyMouthOffset(charIndex, __instance.MouthCtrl);
         }
 
         //-- IK Solver Patch --//
@@ -774,6 +794,21 @@ namespace HS2_BetterHScenes
 
             if (hFlagCtrl.voice.changeTaii)
                 hFlagCtrl.voice.changeTaii = false;
+        }
+
+        public static void PlayAnimations(int play)
+        {
+            foreach (var character in characters.Where(character => character != null))
+            {
+                if (!character.visibleAll)
+                    continue;
+
+                var animator = character.animBody;
+                if (animator == null)
+                    continue;
+
+                animator.speed = play;
+            }
         }
 
         public static void FixMotionList(string fileFemale)

@@ -58,6 +58,7 @@ namespace AI_BetterHScenes
             if (existingCharacter != null)
             {
                 existingCharacter.ShoeOffset = character.ShoeOffset;
+                existingCharacter.MouthOffset = character.MouthOffset;
 
                 foreach (var animation in character.AnimationList)
                     existingCharacter.AddAnimation(animation);
@@ -86,17 +87,22 @@ namespace AI_BetterHScenes
         [XmlElement("ShoeOffset")]
         public float ShoeOffset { get; set; }
 
+        [XmlElement("MouthOffset")]
+        public float MouthOffset { get; set; }
+
         [XmlArray("Animations")]
         public List<AnimationXML> AnimationList = new List<AnimationXML>();
 
         public bool ShouldSerializeShoeOffset() => ShoeOffset != 0.0;
+        public bool ShouldSerializeMouthOffset() => MouthOffset != 0.0;
 
         public CharacterXML() { }
 
-        public CharacterXML(string name, float shoeOffset = 0)
+        public CharacterXML(string name, float shoeOffset = 0, float mouthOffset = 0)
         {
             CharacterName = name;
             ShoeOffset = shoeOffset;
+            MouthOffset = mouthOffset;
         }
 
         public void AddAnimation(AnimationXML animation)
@@ -173,6 +179,15 @@ namespace AI_BetterHScenes
         [XmlElement("RotationOffsetR")]
         public float RotationOffsetR { get; set; }
 
+        [XmlElement("HeadRotationOffsetP")]
+        public float HeadRotationOffsetP { get; set; }
+
+        [XmlElement("HeadRotationOffsetY")]
+        public float HeadRotationOffsetY { get; set; }
+
+        [XmlElement("HeadRotationOffsetR")]
+        public float HeadRotationOffsetR { get; set; }
+
         [XmlElement("LeftHandPositionOffsetX")]
         public float LeftHandPositionOffsetX { get; set; }
 
@@ -199,6 +214,9 @@ namespace AI_BetterHScenes
 
         [XmlElement("LeftHandHintPositionOffsetZ")]
         public float LeftHandHintPositionOffsetZ { get; set; }
+
+        [XmlElement("LeftHandDigitRotationOffsetZ")]
+        public float LeftHandDigitRotationOffsetZ { get; set; }
 
         [XmlElement("RighttHandPositionOffsetX")]
         public float RightHandPositionOffsetX { get; set; }
@@ -227,6 +245,9 @@ namespace AI_BetterHScenes
         [XmlElement("RightHandHintPositionOffsetZ")]
         public float RightHandHintPositionOffsetZ { get; set; }
 
+        [XmlElement("RightHandDigitRotationOffsetZ")]
+        public float RightHandDigitRotationOffsetZ { get; set; }
+
         [XmlElement("LeftFootPositionOffsetX")]
         public float LeftFootPositionOffsetX { get; set; }
 
@@ -253,6 +274,9 @@ namespace AI_BetterHScenes
 
         [XmlElement("LeftFootHintPositionOffsetZ")]
         public float LeftFootHintPositionOffsetZ { get; set; }
+
+        [XmlElement("LeftFootDigitRotationOffsetZ")]
+        public float LeftFootDigitRotationOffsetZ { get; set; }
 
         [XmlElement("RightFootPositionOffsetX")]
         public float RightFootPositionOffsetX { get; set; }
@@ -281,6 +305,9 @@ namespace AI_BetterHScenes
         [XmlElement("RightFootHintPositionOffsetZ")]
         public float RightFootHintPositionOffsetZ { get; set; }
 
+        [XmlElement("RightFootDigitRotationOffsetZ")]
+        public float RightFootDigitRotationOffsetZ { get; set; }
+
         [XmlElement("LeftHandJointCorrection")]
         public bool LeftHandJointCorrection { get; set; }
 
@@ -300,6 +327,9 @@ namespace AI_BetterHScenes
         public bool ShouldSerializeRotationOffsetP() => RotationOffsetP != 0.0;
         public bool ShouldSerializeRotationOffsetY() => RotationOffsetY != 0.0;
         public bool ShouldSerializeRotationOffsetR() => RotationOffsetR != 0.0;
+        public bool ShouldSerializeHeadRotationOffsetP() => HeadRotationOffsetP != 0.0;
+        public bool ShouldSerializeHeadRotationOffsetY() => HeadRotationOffsetY != 0.0;
+        public bool ShouldSerializeHeadRotationOffsetR() => HeadRotationOffsetR != 0.0;
 
         public bool ShouldSerializeLeftHandPositionOffsetX() => LeftHandPositionOffsetX != 0.0;
         public bool ShouldSerializeLeftHandPositionOffsetY() => LeftHandPositionOffsetY != 0.0;
@@ -310,6 +340,7 @@ namespace AI_BetterHScenes
         public bool ShouldSerializeLeftHandHintPositionOffsetX() => LeftHandHintPositionOffsetX != 0.0;
         public bool ShouldSerializeLeftHandHintPositionOffsetY() => LeftHandHintPositionOffsetY != 0.0;
         public bool ShouldSerializeLeftHandHintPositionOffsetZ() => LeftHandHintPositionOffsetZ != 0.0;
+        public bool ShouldSerializeLeftHandDigitRotationOffsetZ() => LeftHandDigitRotationOffsetZ != 0.0;
         public bool ShouldSerializeRightHandPositionOffsetX() => RightHandPositionOffsetX != 0.0;
         public bool ShouldSerializeRightHandPositionOffsetY() => RightHandPositionOffsetY != 0.0;
         public bool ShouldSerializeRightHandPositionOffsetZ() => RightHandPositionOffsetZ != 0.0;
@@ -319,6 +350,7 @@ namespace AI_BetterHScenes
         public bool ShouldSerializeRightHandHintPositionOffsetX() => RightHandHintPositionOffsetX != 0.0;
         public bool ShouldSerializeRightHandHintPositionOffsetY() => RightHandHintPositionOffsetY != 0.0;
         public bool ShouldSerializeRightHandHintPositionOffsetZ() => RightHandHintPositionOffsetZ != 0.0;
+        public bool ShouldSerializeRightHandDigitRotationOffsetZ() => RightHandDigitRotationOffsetZ != 0.0;
         public bool ShouldSerializeLeftFootPositionOffsetX() => LeftFootPositionOffsetX != 0.0;
         public bool ShouldSerializeLeftFootPositionOffsetY() => LeftFootPositionOffsetY != 0.0;
         public bool ShouldSerializeLeftFootPositionOffsetZ() => LeftFootPositionOffsetZ != 0.0;
@@ -328,6 +360,7 @@ namespace AI_BetterHScenes
         public bool ShouldSerializeLeftFootHintPositionOffsetX() => LeftFootHintPositionOffsetX != 0.0;
         public bool ShouldSerializeLeftFootHintPositionOffsetY() => LeftFootHintPositionOffsetY != 0.0;
         public bool ShouldSerializeLeftFootHintPositionOffsetZ() => LeftFootHintPositionOffsetZ != 0.0;
+        public bool ShouldSerializeLeftFootDigitRotationOffsetZ() => LeftFootDigitRotationOffsetZ != 0.0;
         public bool ShouldSerializeRightFootPositionOffsetX() => RightFootPositionOffsetX != 0.0;
         public bool ShouldSerializeRightFootPositionOffsetY() => RightFootPositionOffsetY != 0.0;
         public bool ShouldSerializeRightFootPositionOffsetZ() => RightFootPositionOffsetZ != 0.0;
@@ -337,13 +370,20 @@ namespace AI_BetterHScenes
         public bool ShouldSerializeRightFootHintPositionOffsetX() => RightFootHintPositionOffsetX != 0.0;
         public bool ShouldSerializeRightFootHintPositionOffsetY() => RightFootHintPositionOffsetY != 0.0;
         public bool ShouldSerializeRightFootHintPositionOffsetZ() => RightFootHintPositionOffsetZ != 0.0;
+        public bool ShouldSerializeRightFootDigitRotationOffsetZ() => RightFootDigitRotationOffsetZ != 0.0;
 
         public bool ShouldSerializeLeftHandJointCorrection() => LeftHandJointCorrection != AI_BetterHScenes.defaultJointCorrection.Value;
         public bool ShouldSerializeRightHandJointCorrection() => RightHandJointCorrection != AI_BetterHScenes.defaultJointCorrection.Value;
         public bool ShouldSerializeLeftFootJointCorrection() => LeftFootJointCorrection != AI_BetterHScenes.defaultJointCorrection.Value;
         public bool ShouldSerializeRightFootJointCorrection() => RightFootJointCorrection != AI_BetterHScenes.defaultJointCorrection.Value;
 
-        public MotionOffsetsXML() { }
+        public MotionOffsetsXML()
+        {
+            LeftHandJointCorrection = AI_BetterHScenes.defaultJointCorrection.Value;
+            RightHandJointCorrection = AI_BetterHScenes.defaultJointCorrection.Value;
+            LeftFootJointCorrection = AI_BetterHScenes.defaultJointCorrection.Value;
+            RightFootJointCorrection = AI_BetterHScenes.defaultJointCorrection.Value;
+        }
 
         public MotionOffsetsXML(string motionName, OffsetVectors[] offsetVectors, bool[] jointCorrections)
         {
@@ -358,6 +398,9 @@ namespace AI_BetterHScenes
             RotationOffsetP = offsetVectors[(int)BodyPart.WholeBody].rotation.x;
             RotationOffsetY = offsetVectors[(int)BodyPart.WholeBody].rotation.y;
             RotationOffsetR = offsetVectors[(int)BodyPart.WholeBody].rotation.z;
+            HeadRotationOffsetP = offsetVectors[(int)BodyPart.WholeBody].hint.x;
+            HeadRotationOffsetY = offsetVectors[(int)BodyPart.WholeBody].hint.y;
+            HeadRotationOffsetR = offsetVectors[(int)BodyPart.WholeBody].hint.z;
 
             if (offsetVectors.Length < (int)BodyPart.BodyPartsCount)
                 return;
@@ -368,36 +411,40 @@ namespace AI_BetterHScenes
             LeftHandRotationOffsetP = offsetVectors[(int)BodyPart.LeftHand].rotation.x;
             LeftHandRotationOffsetY = offsetVectors[(int)BodyPart.LeftHand].rotation.y;
             LeftHandRotationOffsetR = offsetVectors[(int)BodyPart.LeftHand].rotation.z;
-            LeftHandHintPositionOffsetX = offsetVectors[(int)BodyPart.LeftHand].hintPosition.x;
-            LeftHandHintPositionOffsetY = offsetVectors[(int)BodyPart.LeftHand].hintPosition.y;
-            LeftHandHintPositionOffsetZ = offsetVectors[(int)BodyPart.LeftHand].hintPosition.z;
+            LeftHandHintPositionOffsetX = offsetVectors[(int)BodyPart.LeftHand].hint.x;
+            LeftHandHintPositionOffsetY = offsetVectors[(int)BodyPart.LeftHand].hint.y;
+            LeftHandHintPositionOffsetZ = offsetVectors[(int)BodyPart.LeftHand].hint.z;
+            LeftHandDigitRotationOffsetZ = offsetVectors[(int)BodyPart.LeftHand].digitRotation;
             RightHandPositionOffsetX = offsetVectors[(int)BodyPart.RightHand].position.x;
             RightHandPositionOffsetY = offsetVectors[(int)BodyPart.RightHand].position.y;
             RightHandPositionOffsetZ = offsetVectors[(int)BodyPart.RightHand].position.z;
             RightHandRotationOffsetP = offsetVectors[(int)BodyPart.RightHand].rotation.x;
             RightHandRotationOffsetY = offsetVectors[(int)BodyPart.RightHand].rotation.y;
             RightHandRotationOffsetR = offsetVectors[(int)BodyPart.RightHand].rotation.z;
-            RightHandHintPositionOffsetX = offsetVectors[(int)BodyPart.RightHand].hintPosition.x;
-            RightHandHintPositionOffsetY = offsetVectors[(int)BodyPart.RightHand].hintPosition.y;
-            RightHandHintPositionOffsetZ = offsetVectors[(int)BodyPart.RightHand].hintPosition.z;
+            RightHandHintPositionOffsetX = offsetVectors[(int)BodyPart.RightHand].hint.x;
+            RightHandHintPositionOffsetY = offsetVectors[(int)BodyPart.RightHand].hint.y;
+            RightHandHintPositionOffsetZ = offsetVectors[(int)BodyPart.RightHand].hint.z;
+            RightHandDigitRotationOffsetZ = offsetVectors[(int)BodyPart.RightHand].digitRotation;
             LeftFootPositionOffsetX = offsetVectors[(int)BodyPart.LeftFoot].position.x;
             LeftFootPositionOffsetY = offsetVectors[(int)BodyPart.LeftFoot].position.y;
             LeftFootPositionOffsetZ = offsetVectors[(int)BodyPart.LeftFoot].position.z;
             LeftFootRotationOffsetP = offsetVectors[(int)BodyPart.LeftFoot].rotation.x;
             LeftFootRotationOffsetY = offsetVectors[(int)BodyPart.LeftFoot].rotation.y;
             LeftFootRotationOffsetR = offsetVectors[(int)BodyPart.LeftFoot].rotation.z;
-            LeftFootHintPositionOffsetX = offsetVectors[(int)BodyPart.LeftFoot].hintPosition.x;
-            LeftFootHintPositionOffsetY = offsetVectors[(int)BodyPart.LeftFoot].hintPosition.y;
-            LeftFootHintPositionOffsetZ = offsetVectors[(int)BodyPart.LeftFoot].hintPosition.z;
+            LeftFootHintPositionOffsetX = offsetVectors[(int)BodyPart.LeftFoot].hint.x;
+            LeftFootHintPositionOffsetY = offsetVectors[(int)BodyPart.LeftFoot].hint.y;
+            LeftFootHintPositionOffsetZ = offsetVectors[(int)BodyPart.LeftFoot].hint.z;
+            LeftFootDigitRotationOffsetZ = offsetVectors[(int)BodyPart.LeftFoot].digitRotation;
             RightFootPositionOffsetX = offsetVectors[(int)BodyPart.RightFoot].position.x;
             RightFootPositionOffsetY = offsetVectors[(int)BodyPart.RightFoot].position.y;
             RightFootPositionOffsetZ = offsetVectors[(int)BodyPart.RightFoot].position.z;
             RightFootRotationOffsetP = offsetVectors[(int)BodyPart.RightFoot].rotation.x;
             RightFootRotationOffsetY = offsetVectors[(int)BodyPart.RightFoot].rotation.y;
             RightFootRotationOffsetR = offsetVectors[(int)BodyPart.RightFoot].rotation.z;
-            RightFootHintPositionOffsetX = offsetVectors[(int)BodyPart.RightFoot].hintPosition.x;
-            RightFootHintPositionOffsetY = offsetVectors[(int)BodyPart.RightFoot].hintPosition.y;
-            RightFootHintPositionOffsetZ = offsetVectors[(int)BodyPart.RightFoot].hintPosition.z;
+            RightFootHintPositionOffsetX = offsetVectors[(int)BodyPart.RightFoot].hint.x;
+            RightFootHintPositionOffsetY = offsetVectors[(int)BodyPart.RightFoot].hint.y;
+            RightFootHintPositionOffsetZ = offsetVectors[(int)BodyPart.RightFoot].hint.z;
+            RightFootDigitRotationOffsetZ = offsetVectors[(int)BodyPart.RightFoot].digitRotation;
 
             LeftHandJointCorrection = jointCorrections[(int)BodyPart.LeftHand];
             RightHandJointCorrection = jointCorrections[(int)BodyPart.RightHand];
@@ -702,36 +749,36 @@ namespace AI_BetterHScenes
             LeftHandRotationOffsetP = _offsetVectors[(int)BodyPart.LeftHand].rotation.x;
             LeftHandRotationOffsetY = _offsetVectors[(int)BodyPart.LeftHand].rotation.y;
             LeftHandRotationOffsetR = _offsetVectors[(int)BodyPart.LeftHand].rotation.z;
-            LeftHandHintPositionOffsetX = _offsetVectors[(int)BodyPart.LeftHand].hintPosition.x;
-            LeftHandHintPositionOffsetY = _offsetVectors[(int)BodyPart.LeftHand].hintPosition.y;
-            LeftHandHintPositionOffsetZ = _offsetVectors[(int)BodyPart.LeftHand].hintPosition.z;
+            LeftHandHintPositionOffsetX = _offsetVectors[(int)BodyPart.LeftHand].hint.x;
+            LeftHandHintPositionOffsetY = _offsetVectors[(int)BodyPart.LeftHand].hint.y;
+            LeftHandHintPositionOffsetZ = _offsetVectors[(int)BodyPart.LeftHand].hint.z;
             RightHandPositionOffsetX = _offsetVectors[(int)BodyPart.RightHand].position.x;
             RightHandPositionOffsetY = _offsetVectors[(int)BodyPart.RightHand].position.y;
             RightHandPositionOffsetZ = _offsetVectors[(int)BodyPart.RightHand].position.z;
             RightHandRotationOffsetP = _offsetVectors[(int)BodyPart.RightHand].rotation.x;
             RightHandRotationOffsetY = _offsetVectors[(int)BodyPart.RightHand].rotation.y;
             RightHandRotationOffsetR = _offsetVectors[(int)BodyPart.RightHand].rotation.z;
-            RightHandHintPositionOffsetX = _offsetVectors[(int)BodyPart.RightHand].hintPosition.x;
-            RightHandHintPositionOffsetY = _offsetVectors[(int)BodyPart.RightHand].hintPosition.y;
-            RightHandHintPositionOffsetZ = _offsetVectors[(int)BodyPart.RightHand].hintPosition.z;
+            RightHandHintPositionOffsetX = _offsetVectors[(int)BodyPart.RightHand].hint.x;
+            RightHandHintPositionOffsetY = _offsetVectors[(int)BodyPart.RightHand].hint.y;
+            RightHandHintPositionOffsetZ = _offsetVectors[(int)BodyPart.RightHand].hint.z;
             LeftFootPositionOffsetX = _offsetVectors[(int)BodyPart.LeftFoot].position.x;
             LeftFootPositionOffsetY = _offsetVectors[(int)BodyPart.LeftFoot].position.y;
             LeftFootPositionOffsetZ = _offsetVectors[(int)BodyPart.LeftFoot].position.z;
             LeftFootRotationOffsetP = _offsetVectors[(int)BodyPart.LeftFoot].rotation.x;
             LeftFootRotationOffsetY = _offsetVectors[(int)BodyPart.LeftFoot].rotation.y;
             LeftFootRotationOffsetR = _offsetVectors[(int)BodyPart.LeftFoot].rotation.z;
-            LeftFootHintPositionOffsetX = _offsetVectors[(int)BodyPart.LeftFoot].hintPosition.x;
-            LeftFootHintPositionOffsetY = _offsetVectors[(int)BodyPart.LeftFoot].hintPosition.y;
-            LeftFootHintPositionOffsetZ = _offsetVectors[(int)BodyPart.LeftFoot].hintPosition.z;
+            LeftFootHintPositionOffsetX = _offsetVectors[(int)BodyPart.LeftFoot].hint.x;
+            LeftFootHintPositionOffsetY = _offsetVectors[(int)BodyPart.LeftFoot].hint.y;
+            LeftFootHintPositionOffsetZ = _offsetVectors[(int)BodyPart.LeftFoot].hint.z;
             RightFootPositionOffsetX = _offsetVectors[(int)BodyPart.RightFoot].position.x;
             RightFootPositionOffsetY = _offsetVectors[(int)BodyPart.RightFoot].position.y;
             RightFootPositionOffsetZ = _offsetVectors[(int)BodyPart.RightFoot].position.z;
             RightFootRotationOffsetP = _offsetVectors[(int)BodyPart.RightFoot].rotation.x;
             RightFootRotationOffsetY = _offsetVectors[(int)BodyPart.RightFoot].rotation.y;
             RightFootRotationOffsetR = _offsetVectors[(int)BodyPart.RightFoot].rotation.z;
-            RightFootHintPositionOffsetX = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.x;
-            RightFootHintPositionOffsetY = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.y;
-            RightFootHintPositionOffsetZ = _offsetVectors[(int)BodyPart.RightFoot].hintPosition.z;
+            RightFootHintPositionOffsetX = _offsetVectors[(int)BodyPart.RightFoot].hint.x;
+            RightFootHintPositionOffsetY = _offsetVectors[(int)BodyPart.RightFoot].hint.y;
+            RightFootHintPositionOffsetZ = _offsetVectors[(int)BodyPart.RightFoot].hint.z;
 
             ShoeOffset = _shoeOffset;
         }

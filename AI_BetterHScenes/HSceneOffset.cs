@@ -63,19 +63,24 @@ namespace AI_BetterHScenes
                         OffsetVectors[] loadOffsets = new OffsetVectors[(int)BodyPart.BodyPartsCount];
                         loadOffsets[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(motion.PositionOffsetX, motion.PositionOffsetY, motion.PositionOffsetZ),
                                                                                  new Vector3(motion.RotationOffsetP, motion.RotationOffsetY, motion.RotationOffsetR),
-                                                                                 Vector3.zero);
+                                                                                 new Vector3(motion.HeadRotationOffsetP, motion.HeadRotationOffsetY, motion.HeadRotationOffsetR),
+                                                                                 0f);
                         loadOffsets[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(motion.LeftHandPositionOffsetX, motion.LeftHandPositionOffsetY, motion.LeftHandPositionOffsetZ),
                                                                                 new Vector3(motion.LeftHandRotationOffsetP, motion.LeftHandRotationOffsetY, motion.LeftHandRotationOffsetR),
-                                                                                new Vector3(motion.LeftHandHintPositionOffsetX, motion.LeftHandHintPositionOffsetY, motion.LeftHandHintPositionOffsetZ));
+                                                                                new Vector3(motion.LeftHandHintPositionOffsetX, motion.LeftHandHintPositionOffsetY, motion.LeftHandHintPositionOffsetZ),
+                                                                                motion.LeftHandDigitRotationOffsetZ);
                         loadOffsets[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(motion.RightHandPositionOffsetX, motion.RightHandPositionOffsetY, motion.RightHandPositionOffsetZ),
                                                                                  new Vector3(motion.RightHandRotationOffsetP, motion.RightHandRotationOffsetY, motion.RightHandRotationOffsetR),
-                                                                                 new Vector3(motion.RightHandHintPositionOffsetX, motion.RightHandHintPositionOffsetY, motion.RightHandHintPositionOffsetZ));
+                                                                                 new Vector3(motion.RightHandHintPositionOffsetX, motion.RightHandHintPositionOffsetY, motion.RightHandHintPositionOffsetZ),
+                                                                                 motion.RightHandDigitRotationOffsetZ);
                         loadOffsets[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(motion.LeftFootPositionOffsetX, motion.LeftFootPositionOffsetY, motion.LeftFootPositionOffsetZ),
                                                                                 new Vector3(motion.LeftFootRotationOffsetP, motion.LeftFootRotationOffsetY, motion.LeftFootRotationOffsetR),
-                                                                                new Vector3(motion.LeftFootHintPositionOffsetX, motion.LeftFootHintPositionOffsetY, motion.LeftFootHintPositionOffsetZ));
+                                                                                new Vector3(motion.LeftFootHintPositionOffsetX, motion.LeftFootHintPositionOffsetY, motion.LeftFootHintPositionOffsetZ),
+                                                                                motion.LeftFootDigitRotationOffsetZ);
                         loadOffsets[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(motion.RightFootPositionOffsetX, motion.RightFootPositionOffsetY, motion.RightFootPositionOffsetZ),
                                                                                  new Vector3(motion.RightFootRotationOffsetP, motion.RightFootRotationOffsetY, motion.RightFootRotationOffsetR),
-                                                                                 new Vector3(motion.RightFootHintPositionOffsetX, motion.RightFootHintPositionOffsetY, motion.RightFootHintPositionOffsetZ));
+                                                                                 new Vector3(motion.RightFootHintPositionOffsetX, motion.RightFootHintPositionOffsetY, motion.RightFootHintPositionOffsetZ),
+                                                                                 motion.RightFootDigitRotationOffsetZ);
 
                         bool[] jointCorrections = new bool[(int)BodyPart.BodyPartsCount];
                         jointCorrections[(int)BodyPart.LeftHand] = motion.LeftHandJointCorrection;
@@ -83,7 +88,7 @@ namespace AI_BetterHScenes
                         jointCorrections[(int)BodyPart.LeftFoot] = motion.LeftFootJointCorrection;
                         jointCorrections[(int)BodyPart.RightFoot] = motion.RightFootJointCorrection;
 
-                        SliderUI.LoadOffsets(charIndex, loadOffsets, jointCorrections, character.ShoeOffset);
+                        SliderUI.LoadOffsets(charIndex, loadOffsets, jointCorrections, character.ShoeOffset, character.MouthOffset);
 
                         bValidOffsetsFound = true;
                     }
@@ -100,9 +105,9 @@ namespace AI_BetterHScenes
         }
 
         //-- Save the character pair of offsets to the xml file, overwriting if necessary --//
-        public static void SaveCharacterGroupOffsets(List<string> characterNames, List<OffsetVectors[]> offsetVectorList, List<bool[]> jointCorrectionList, List<float> shoeOffsets, bool isDefault = false)
+        public static void SaveCharacterGroupOffsets(List<string> characterNames, List<OffsetVectors[]> offsetVectorList, List<bool[]> jointCorrectionList, List<float> shoeOffsets, List<float> mouthOffsets, bool isDefault = false)
         {
-            if (characterNames.IsNullOrEmpty() || offsetVectorList.IsNullOrEmpty() || shoeOffsets.IsNullOrEmpty())
+            if (characterNames.IsNullOrEmpty() || offsetVectorList.IsNullOrEmpty() || shoeOffsets.IsNullOrEmpty() || mouthOffsets.IsNullOrEmpty())
                 return;
 
             var currentAnimation = AI_BetterHScenes.hFlagCtrl.nowAnimationInfo.nameAnimation;
@@ -137,7 +142,7 @@ namespace AI_BetterHScenes
                 var animation = new AnimationXML(currentAnimation);
                 animation.AddMotionOffsets(motionOffsets);
 
-                var character = new CharacterXML(characterNames[charIndex], shoeOffsets[charIndex]);
+                var character = new CharacterXML(characterNames[charIndex], shoeOffsets[charIndex], mouthOffsets[charIndex]);
                 character.AddAnimation(animation);
 
                 characterGroup.AddCharacter(character);
@@ -228,7 +233,6 @@ namespace AI_BetterHScenes
             }
             catch
             {
-                //AI_BetterHScenes.Logger.LogMessage("read error!");
                 return;
             }
 
@@ -259,23 +263,27 @@ namespace AI_BetterHScenes
                             CharacterGroupXML characterGroupXML = new CharacterGroupXML(characterPair.CharacterPairName);
                             foreach (var character in characterPair.CharacterOffsets)
                             {
-
                                 OffsetVectors[] offsetVectors = new OffsetVectors[(int)BodyPart.BodyPartsCount];
                                 offsetVectors[(int)BodyPart.WholeBody] = new OffsetVectors(new Vector3(character.PositionOffsetX, character.PositionOffsetY, character.PositionOffsetZ),
                                                                                          new Vector3(character.RotationOffsetP, character.RotationOffsetY, character.RotationOffsetR),
-                                                                                         Vector3.zero);
+                                                                                         Vector3.zero,
+                                                                                         0f);
                                 offsetVectors[(int)BodyPart.LeftHand] = new OffsetVectors(new Vector3(character.LeftHandPositionOffsetX, character.LeftHandPositionOffsetY, character.LeftHandPositionOffsetZ),
                                                                                         new Vector3(character.LeftHandRotationOffsetP, character.LeftHandRotationOffsetY, character.LeftHandRotationOffsetR),
-                                                                                        new Vector3(character.LeftHandHintPositionOffsetX, character.LeftHandHintPositionOffsetY, character.LeftHandHintPositionOffsetZ));
+                                                                                        new Vector3(character.LeftHandHintPositionOffsetX, character.LeftHandHintPositionOffsetY, character.LeftHandHintPositionOffsetZ),
+                                                                                        0f);
                                 offsetVectors[(int)BodyPart.RightHand] = new OffsetVectors(new Vector3(character.RightHandPositionOffsetX, character.RightHandPositionOffsetY, character.RightHandPositionOffsetZ),
                                                                                          new Vector3(character.RightHandRotationOffsetP, character.RightHandRotationOffsetY, character.RightHandRotationOffsetR),
-                                                                                         new Vector3(character.RightHandHintPositionOffsetX, character.RightHandHintPositionOffsetY, character.RightHandHintPositionOffsetZ));
+                                                                                         new Vector3(character.RightHandHintPositionOffsetX, character.RightHandHintPositionOffsetY, character.RightHandHintPositionOffsetZ),
+                                                                                         0f);
                                 offsetVectors[(int)BodyPart.LeftFoot] = new OffsetVectors(new Vector3(character.LeftFootPositionOffsetX, character.LeftFootPositionOffsetY, character.LeftFootPositionOffsetZ),
                                                                                         new Vector3(character.LeftFootRotationOffsetP, character.LeftFootRotationOffsetY, character.LeftFootRotationOffsetR),
-                                                                                        new Vector3(character.LeftFootHintPositionOffsetX, character.LeftFootHintPositionOffsetY, character.LeftFootHintPositionOffsetZ));
+                                                                                        new Vector3(character.LeftFootHintPositionOffsetX, character.LeftFootHintPositionOffsetY, character.LeftFootHintPositionOffsetZ),
+                                                                                        0f);
                                 offsetVectors[(int)BodyPart.RightFoot] = new OffsetVectors(new Vector3(character.RightFootPositionOffsetX, character.RightFootPositionOffsetY, character.RightFootPositionOffsetZ),
                                                                                          new Vector3(character.RightFootRotationOffsetP, character.RightFootRotationOffsetY, character.RightFootRotationOffsetR),
-                                                                                         new Vector3(character.RightFootHintPositionOffsetX, character.RightFootHintPositionOffsetY, character.RightFootHintPositionOffsetZ));
+                                                                                         new Vector3(character.RightFootHintPositionOffsetX, character.RightFootHintPositionOffsetY, character.RightFootHintPositionOffsetZ),
+                                                                                         0f);
 
                                 bool[] jointCorrections = new bool[(int)BodyPart.BodyPartsCount];
 

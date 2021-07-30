@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using UnityEngine;
 
@@ -15,6 +14,8 @@ namespace AI_BetterHScenes
 
         public static int selectedMotion = 0;
         public static int currentMotion = 0;
+        public static int selectedPlay = 1;
+        public static int currentPlay = 1;
 
         private static void DrawWindow(int id)
         {
@@ -33,28 +34,37 @@ namespace AI_BetterHScenes
 
             using (GUILayout.VerticalScope guiVerticalScope = new GUILayout.VerticalScope("box"))
             {
-                if (AI_BetterHScenes.maleMotionList != null && AI_BetterHScenes.maleMotionList.Count > 0)
+                if (AI_BetterHScenes.maleMotionList == null || AI_BetterHScenes.maleMotionList.Count <= 0)
+                    return;
+
+                List<string> motionNames = new List<string>();
+                for (int motionIndex = 0; motionIndex < AI_BetterHScenes.maleMotionList.Count; motionIndex++)
+                    motionNames.Add(AI_BetterHScenes.maleMotionList[motionIndex].anim);
+
+                if (AI_BetterHScenes.currentMotion == null || motionNames.IsNullOrEmpty())
+                    return;
+
+                currentMotion = motionNames.IndexOf(AI_BetterHScenes.currentMotion);
+                if (currentMotion < 0)
+                    return;
+
+                selectedMotion = GUILayout.SelectionGrid(currentMotion, motionNames.ToArray(), 2, gridStyle);
+                if (selectedMotion != currentMotion)
                 {
-                    List<string> motionNames = new List<string>();
-                    for (int motionIndex = 0; motionIndex < AI_BetterHScenes.maleMotionList.Count; motionIndex++)
-                        motionNames.Add(AI_BetterHScenes.maleMotionList[motionIndex].anim);
+                    Console.WriteLine("Apply Motion " + selectedMotion + ": " + AI_BetterHScenes.maleMotionList[selectedMotion].anim);
+                    AI_BetterHScenes.SwitchAnimations(AI_BetterHScenes.maleMotionList[selectedMotion].anim);
+                    currentMotion = selectedMotion;
+                }
+            }
 
-                    if (AI_BetterHScenes.currentMotion != null && !motionNames.IsNullOrEmpty())
-                    {
-                        currentMotion = motionNames.IndexOf(AI_BetterHScenes.currentMotion);
-
-                        if (currentMotion >= 0)
-                        {
-                            selectedMotion = GUILayout.SelectionGrid(currentMotion, motionNames.ToArray(), 2, gridStyle);
-
-                            if (selectedMotion != currentMotion)
-                            {
-                                Console.WriteLine("Apply Motion " + selectedMotion + ": " + AI_BetterHScenes.maleMotionList[selectedMotion].anim);
-                                AI_BetterHScenes.SwitchAnimations(AI_BetterHScenes.maleMotionList[selectedMotion].anim);
-                                currentMotion = selectedMotion;
-                            }
-                        }
-                    }
+            using (GUILayout.VerticalScope guiVerticalScope = new GUILayout.VerticalScope("box"))
+            {
+                selectedPlay = GUILayout.SelectionGrid(currentPlay, new string[] { "Pause", "Play" }, 2, gridStyle);
+                if (selectedPlay != currentPlay)
+                {
+                    Console.WriteLine("Pause Motion " + selectedPlay);
+                    AI_BetterHScenes.PlayAnimations(selectedPlay);
+                    currentPlay = selectedPlay;
                 }
             }
 
