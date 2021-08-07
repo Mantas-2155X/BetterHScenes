@@ -19,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\..\Program Files %28x86%29\AI-Shoujo\BepInEx\Plugins\2155X\</OutputPath>
+    <OutputPath>../_bin/AI/BepInEx/plugins/2155X/</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -49,7 +49,8 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="BehaviorDesigner.Runtime">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\AI-Shoujo\StudioNEOV2_Data\Managed\BehaviorDesigner.Runtime.dll</HintPath>
+      <HintPath>..\..\..\libs\Game\AI\BehaviorDesigner.Runtime.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx, Version=5.4.8.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\IllusionLibs.BepInEx.5.4.8\lib\net35\BepInEx.dll</HintPath>
